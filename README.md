@@ -1,10 +1,10 @@
-# TicTacToeWithBettingOnChain
+# TicTacToeWithBettingOnChain with a twist
 
 TicTacToe with betting on Cardano blockchain.
 With a Twist. The secret souce is to het the top row A1,A2,A3 to win.
 No other patterns will win.
 
-##  Flow of game.
+##  Example Flow of a game.
 Below is 8 transactions to complete a game.
 ![tx1](./docs/images/tx1.jpg)
 ![tx2](./docs/images/tx2.jpg)
