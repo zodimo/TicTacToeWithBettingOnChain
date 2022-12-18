@@ -1,7 +1,7 @@
 # TicTacToeWithBettingOnChain with a twist
 
 TicTacToe with betting on Cardano blockchain.
-With a Twist. The secret souce is to het the top row A1,A2,A3 to win.
+With a Twist. The secret souce is to get the top row A1,A2,A3 to win.
 No other patterns will win.
 
 ## Grid
