@@ -1,0 +1,22 @@
+{
+  "name": "tictactoewithbettingonchain",
+  "version": "1.0.0",
+  "description": "Cardano Game for evaluation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zodimo/TicTacToeWithBettingOnChain.git"
+  },
+  "author": "Jaco Labuschagne",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zodimo/TicTacToeWithBettingOnChain/issues"
+  },
+  "homepage": "https://github.com/zodimo/TicTacToeWithBettingOnChain#readme",
+  "dependencies": {
+    "cardanocli-js": "^4.1.4"
+  }
+}
