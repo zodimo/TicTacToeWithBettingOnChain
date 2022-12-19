@@ -2,7 +2,8 @@
   "name": "tictactoewithbettingonchain",
   "version": "1.0.0",
   "description": "Cardano Game for evaluation",
-  "main": "index.js",
+  "main": "app.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,6 +18,11 @@
   },
   "homepage": "https://github.com/zodimo/TicTacToeWithBettingOnChain#readme",
   "dependencies": {
-    "cardanocli-js": "^4.1.4"
+    "cardanocli-js": "github:zodimo/cardanocli-js#main",
+    "yargs": "^17.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.17",
+    "typescript": "^4.9.4"
   }
 }
