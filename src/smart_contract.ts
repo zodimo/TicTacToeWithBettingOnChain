@@ -11,3 +11,11 @@ export const scriptPath = __dirname + "/../testnet/ticTacToe.plutus";
 const scriptRaw = fs.readFileSync(scriptPath).toString();
 export const script=JSON.parse(scriptRaw);
 export const policyId=cardanocliJs.transactionPolicyid(script);
+
+export const getScriptAddress=()=>{
+    const scriptWalletName = "ticTacToeScript"
+    cardanocliJs.addressBuild(scriptWalletName, {
+        paymentScript:script
+      });
+    return cardanocliJs.wallet(scriptWalletName).paymentAddr
+}
