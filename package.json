@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/zodimo/TicTacToeWithBettingOnChain#readme",
   "dependencies": {
+    "@emurgo/cardano-serialization-lib-nodejs": "^11.2.1",
     "cardanocli-js": "github:zodimo/cardanocli-js#1.35.4",
     "lucid-cardano": "^0.8.2",
     "yargs": "^17.6.2"
