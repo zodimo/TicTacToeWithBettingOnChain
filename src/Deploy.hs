@@ -2,13 +2,8 @@
 {-# LANGUAGE TypeApplications  #-}
 
 module Deploy
-    ( writeJSON
-    , writeValidator
-    , writeUnit
-    , writeDatum
-    , writeRedeemer
-    , badRedeemer
-    , writeBountyValidator
+    ( writeUnit
+    , writeTicTacToeValidator
     ) where
 
 import           Cardano.Api
@@ -21,7 +16,7 @@ import           PlutusTx              (Data (..))
 import qualified PlutusTx
 import qualified Ledger
 
-import           MathBountyO
+import           GameValidator
 
 dataToScriptData :: Data -> ScriptData
 dataToScriptData (Constr n xs) = ScriptDataConstructor n $ dataToScriptData <$> xs
@@ -34,19 +29,10 @@ writeJSON :: PlutusTx.ToData a => FilePath -> a -> IO ()
 writeJSON file = LBS.writeFile file . encode . scriptDataToJson ScriptDataJsonDetailedSchema . dataToScriptData . PlutusTx.toData
 
 writeValidator :: FilePath -> Ledger.Validator -> IO (Either (FileError ()) ())
-writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV1) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Ledger.unValidatorScript
+writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV2) file Nothing . PlutusScriptSerialised . SBS.toShort . LBS.toStrict . serialise . Ledger.unValidatorScript
 
 writeUnit :: IO ()
 writeUnit = writeJSON "testnet/unit.json" ()
 
-writeDatum :: IO ()
-writeDatum = writeJSON "testnet/datum.json" (MBD 100)
-
-writeRedeemer :: IO ()
-writeRedeemer = writeJSON "testnet/goodRedeemer.json" (10::Integer)
-
-badRedeemer :: IO ()
-badRedeemer = writeJSON "testnet/badRedeemer.json" (7::Integer)
-
-writeBountyValidator :: IO (Either (FileError ()) ())
-writeBountyValidator = writeValidator "testnet/mathBounty.plutus" $ validator
+writeTicTacToeValidator :: IO (Either (FileError ()) ())
+writeTicTacToeValidator = writeValidator "testnet/ticTacToe.plutus" $ validator
