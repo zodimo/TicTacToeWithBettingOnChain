@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeApplications    #-}  --Allow the use of type application syntax
 {-# LANGUAGE TypeFamilies        #-}  --Allow use and definition of indexed type and data families
 {-# LANGUAGE TypeOperators       #-}  --Allow the use and definition of types with operator names
+{-# LANGUAGE OverloadedStrings   #-}  --Allow string to be used for bytestring
 
 module GameValidator where
 
@@ -44,38 +45,78 @@ import           Control.Monad.Freer.Extras     as Extras
 
 -- custom data types
 
+data StartGameData = StartGameData
+    { gameBetInAda   :: Integer
+    , deadlineInMins :: Integer
+    }
+
+PlutusTx.makeIsDataIndexed ''StartGameData [('StartGameData,0)]
+
+data Player = Player_X | Player_O deriving Show
+data JoinGameData = JoinGameData
+    { gameAction      :: BuiltinByteString
+    , startWithPlayer :: Player
+    } deriving Show
+
+PlutusTx.makeIsDataIndexed ''Player [('Player_X,0), ('Player_O,1)]
+PlutusTx.makeIsDataIndexed ''JoinGameData [('JoinGameData,0)]
+
+
 data Row = Row_A| Row_B | Row_C deriving Show
 data Column = Col_1 | Col_2 | Col_3 deriving Show
 data Move = Move Row Column deriving Show
+type Moves = [Move]
 
-data GameStateDatum = GameStateDatum
-    { oWallet :: PaymentPubKeyHash
-    , xWallet :: Maybe PaymentPubKeyHash
+PlutusTx.makeIsDataIndexed ''Row [('Row_A,0),('Row_B,1),('Row_C,2)]
+PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
+PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
+
+
+data GameState = Initiated | Running | Xwins | Owins | Atie | Cancelled deriving (Show)
+data GameStateDatum = StartedDatum
+    { oWallet     :: PaymentPubKeyHash
+    , deadline    :: POSIXTime
+    , bet         :: Integer
+    , gameState   :: GameState
+    } | JoinedDatum 
+    { oWallet     :: PaymentPubKeyHash
+    , xWallet     :: PaymentPubKeyHash
     , deadline    :: POSIXTime
     , bet :: Integer
-    , moves :: Maybe [Move]
-    } deriving Show
+    , gameState   :: GameState
+    } | MovedDatum
+    { oWallet     :: PaymentPubKeyHash
+    , xWallet     :: PaymentPubKeyHash
+    , deadline    :: POSIXTime
+    , bet         :: Integer 
+    , moves       :: [Move] 
+    , gameState   :: GameState
+     }
+    --  exit routes dont produce datums
+     deriving Show
 
-
--- loadWorldStateFromDatum :: GameStateDatum -> WorldState 
 
 -- template haskell to make instance of data for custom datatypes.
 PlutusTx.unstableMakeIsData ''GameStateDatum
-PlutusTx.unstableMakeIsData ''Move
-PlutusTx.unstableMakeIsData ''Row
-PlutusTx.unstableMakeIsData ''Column
+PlutusTx.unstableMakeIsData ''GameState
 
 
 {-# INLINABLE mkValidator #-} -- Everything that its supposed to run in on-chain code need this pragma
  -- Datum -- Redeemer -- ScriptContext
-mkValidator :: GameStateDatum -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
+-- mkValidator :: (GameStateDatum) -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
+mkValidator :: () -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 mkValidator _ _ _ = True
 
 
 data Game
 instance Scripts.ValidatorTypes Game where
-    type instance DatumType Game = GameStateDatum
+    -- type instance DatumType Game = GameStateDatum
+    type instance DatumType Game = ()
     type instance RedeemerType Game = ()
+
+
+-- helper functions.
+
 
 
 typedValidator :: Scripts.TypedValidator Game
@@ -83,7 +124,8 @@ typedValidator = Scripts.mkTypedValidator @Game
     $$(PlutusTx.compile [|| mkValidator ||])
     $$(PlutusTx.compile [|| wrap ||])
   where
-    wrap = Scripts.mkUntypedValidator @GameStateDatum @()
+    -- wrap = Scripts.mkUntypedValidator @GameStateDatum @()
+    wrap = Scripts.mkUntypedValidator @() @()
 
     
 
