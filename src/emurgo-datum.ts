@@ -85,6 +85,9 @@ class Move {
       )
   }
 
+  toScriptDataJson(){
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema)
+  }
 
 }
 
@@ -131,8 +134,13 @@ export class StartGameData{
       plutusList
       )
   }
+
+  toScriptDataJson(){
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema)
+  }
 }
 
-// const startGameData:StartGameData=new StartGameData(10,15);
-// console.log(startGameData.data.to_hex());
+const startGameData:StartGameData=new StartGameData(10,15);
+console.log(startGameData.data.to_hex());
+console.log(startGameData.toScriptDataJson());
 

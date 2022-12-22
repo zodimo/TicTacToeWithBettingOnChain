@@ -17,8 +17,6 @@ import { Data, Constr } from "lucid-cardano";
 // PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 // PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
 
-// @see https://meshjs.dev/apis/transaction/smart-contract
-
 const rowA: Data = new Constr(0, []);
 
 const rowB: Data = new Constr(1, []);
