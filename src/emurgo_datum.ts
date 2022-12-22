@@ -84,10 +84,24 @@ class Move {
       plutusList
       )
   }
+
+
 }
 
+class PlutusScriptDataJsonSchema{
+  // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
+  static get ScriptDataJsonNoSchema(){
+      return 0;
+  }
+  static get ScriptDataJsonDetailedSchema(){
+    return 1;
+  }
+}
+
+
+
 // const move = new Move(Row.Row_A,Column.Col_3);
-// console.log(move.data.to_hex());
+// console.log(a.PlutusData.from_hex(move.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema));
 
 
 //  data StartGameData = StartGameData
