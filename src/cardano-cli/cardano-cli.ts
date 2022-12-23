@@ -1,11 +1,18 @@
 import { execSync } from "child_process";
 import fs from "fs";
 import { Wallet } from "./wallet.js";
-import { Utxo, UtxoNativeAsset, UtxoValue } from "./utxo.js";
+import {
+  StackValue,
+  Utxo,
+  UtxoNativeAsset,
+  UtxoStack,
+  UtxoValue,
+} from "./utxo.js";
+import { stringify } from "querystring";
 
 export interface ConstructorOptionsInterface {
   shelleyGenesisPath: string;
-  cliPath?: string;
+  cliPath: string | null;
   dir: string;
   era: string;
   network: string;
@@ -17,7 +24,7 @@ export class ConstructorOptions implements ConstructorOptionsInterface {
     public readonly dir: string,
     public readonly era: string,
     public readonly network: string,
-    public readonly cliPath?: string
+    public readonly cliPath: string | null = null
   ) {}
 }
 
@@ -53,28 +60,30 @@ export class CardanoCli {
   }
 
   wallet(account: string): Wallet {
-    let stakingAddr = "No staking keys generated";
-
-    this.assertPaymentAddressExists(account);
-
-    const paymentAddr = fs
-      .readFileSync(
-        `${this.dir}/priv/wallet/${account}/${account}.payment.addr`
-      )
-      .toString();
-
-    // stakingAddr = fs
-    //   .readFileSync(`${this.dir}/priv/wallet/${account}/${account}.stake.addr`)
-    //   .toString();
-
-    return new Wallet(account, paymentAddr);
-  }
-
-  assertPaymentAddressExists(account: string) {
-    const path = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
-    if (!fs.existsSync(path)) {
+    const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+    if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
     }
+
+    const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
+
+    const stakingAddrFile = `${this.dir}/priv/wallet/${account}/${account}.stake.addr`;
+
+    let stakingAddr: string | null = null;
+    if (fs.existsSync(stakingAddrFile)) {
+      stakingAddr = fs
+        .readFileSync(
+          `${this.dir}/priv/wallet/${account}/${account}.stake.addr`
+        )
+        .toString();
+    }
+
+    return new Wallet(account, paymentAddr, stakingAddr);
+  }
+
+  getUtxoStackFor(paymentAddr: string): UtxoStack {
+    const utxos = this.queryUtxo(paymentAddr);
+    return new UtxoStack(utxos);
   }
 
   queryUtxo(address: string) {
