@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import fs from "fs";
-import { AddressKeys, Wallet, WalletKeys } from "./wallet.js";
+import { AddressKeys, ScriptWallet, Wallet, WalletKeys } from "./wallet.js";
 import {
   StackValue,
   Utxo,
@@ -20,6 +20,7 @@ import {
 import { stringify } from "querystring";
 import { Address } from "@emurgo/cardano-serialization-lib-nodejs";
 import { Network } from "./network.js";
+import { PaymentAddressBuildOptions } from "./address.js";
 
 export interface CardanoCliOptionsInterface {
   shelleyGenesisPath: string;
@@ -70,7 +71,9 @@ export class CardanoCli {
     this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
 
     this.ensureTempDirectoryExists();
-    this.ensureProtocolParametersPathExist();
+
+    this.writeProtocolParametersFile();
+    this.ensureProtocolParametersFileExist();
   }
 
   private ensureTempDirectoryExists(): void {
@@ -83,7 +86,7 @@ export class CardanoCli {
     if (this.debug) {
       console.log("DEBUG: " + formattedCommand);
     }
-    return execSync(formattedCommand).toString();
+    return execSync(formattedCommand).toString().trim();
   }
 
   queryTip() {
@@ -93,6 +96,17 @@ export class CardanoCli {
         --cardano-mode`)
     );
   }
+
+  scriptWallet(account:string):ScriptWallet{
+    const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+    if (!fs.existsSync(paymentAddrFile)) {
+        throw new Error(`Payment Address for ${account} does not exist.`);
+    }
+    const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
+
+    return new ScriptWallet (account, paymentAddr);
+
+}
 
   wallet(account: string): Wallet {
     const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
@@ -245,12 +259,6 @@ export class CardanoCli {
 `);
   }
 
-  ensureProtocolParametersPathExist(): void {
-    if (!fs.existsSync(this.protocolParametersFile)) {
-      this.writeProtocolParametersFile();
-    }
-  }
-
   toLovelace(ada: number): number {
     return ada * 1000000;
   }
@@ -307,5 +315,134 @@ export class CardanoCli {
     )
       .toString()
       .trim();
+  }
+
+  transactionPolicyid(scriptFile: string) {
+    return this.runCommand(
+      `${this.cliPath} transaction policyid --script-file ${scriptFile}`
+    );
+  }
+
+  /**
+   * Payment Address
+   */
+
+  createPaymentSKeyFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.payment.skey`;
+  }
+
+  createPaymentVKeyFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.payment.vkey`;
+  }
+
+  createPaymentAddressFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+  }
+
+  paymentAddressKeyGen(account: string): AddressKeys {
+    let vkey = this.createPaymentVKeyFileNameForAccount(account);
+    let skey = this.createPaymentSKeyFileNameForAccount(account);
+
+    this.ensureKeysDoNoAlreadyExist(vkey, skey);
+
+    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.runCommand(`${this.cliPath} address key-gen \
+                        --verification-key-file ${vkey} \
+                        --signing-key-file ${skey}
+                    `);
+    return new AddressKeys(vkey, skey);
+  }
+
+  paymentAddressBuild(account: string, options: PaymentAddressBuildOptions) {
+    const paymentAddressFileName =
+      this.createPaymentAddressFileNameForAccount(account);
+    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+
+    let stakingAddressString: string = "";
+    if (options.stakingVerification) {
+      stakingAddressString = options.stakingVerification.asParameter();
+    }
+
+    this.runCommand(`${this.cliPath} address build \
+                    ${options.paymentVerification.asParameter()} \
+                    ${stakingAddressString} 
+                    --out-file ${paymentAddressFileName} \
+                    ${this.network.asParameter()}
+                `);
+    return paymentAddressFileName;
+  }
+
+  /**
+   * Staking Address
+   */
+
+  createStakingSKeyFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.stake.skey`;
+  }
+
+  createStakingVKeyFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.stake.vkey`;
+  }
+
+  createStakingAddressFileNameForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}/${account}.stake.addr`;
+  }
+
+  stakeAddressKeyGen(account: string): AddressKeys {
+    const vkey = this.createStakingVKeyFileNameForAccount(account);
+    const skey = this.createStakingSKeyFileNameForAccount(account);
+
+    this.ensureKeysDoNoAlreadyExist(vkey, skey);
+    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.runCommand(`${this.cliPath} stake-address key-gen \
+                        --verification-key-file ${vkey} \
+                        --signing-key-file ${skey}
+                    `);
+    return new AddressKeys(vkey, skey);
+  }
+
+  stakeAddressBuild(account: string): string {
+    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    const stakingVKeyFileName =
+      this.createStakingVKeyFileNameForAccount(account);
+    const stakingAddrFileName =
+      this.createStakingVKeyFileNameForAccount(account);
+    this.runCommand(`${this.cliPath} stake-address build \
+                        --staking-verification-key-file ${stakingVKeyFileName} \
+                        --out-file ${stakingAddrFileName} \
+                        ${this.network.asParameter}
+                    `);
+    return stakingAddrFileName;
+  }
+
+  ensureKeysDoNoAlreadyExist(verificationKey: string, signingKey: string) {
+    if (fs.existsSync(verificationKey)) {
+      throw new Error(`Verification key already exists: ${verificationKey}`);
+    }
+    if (fs.existsSync(signingKey)) {
+      throw new Error(`Signing key already exists: ${signingKey}`);
+    }
+  }
+
+  ensurePathExists(path: string, createIfNotExists: boolean = true) {
+    if (!fs.existsSync(path) && createIfNotExists) {
+      fs.mkdirSync(path, { recursive: true });
+    }
+
+    if (!fs.existsSync(path)) {
+      throw new Error(`Path does not exist: ${path}`);
+    }
+  }
+
+  ensureProtocolParametersFileExist(createIfNotExists: boolean = true): void {
+    if (!fs.existsSync(this.protocolParametersFile) && createIfNotExists) {
+      this.writeProtocolParametersFile();
+    }
+
+    if (!fs.existsSync(this.protocolParametersFile)) {
+      throw new Error(
+        `Protocol Parameters File do not exist: ${this.protocolParametersFile}`
+      );
+    }
   }
 }

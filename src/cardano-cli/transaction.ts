@@ -195,14 +195,14 @@ export class TxOutAsset {
 export class TxOut {
   constructor(
     private readonly address: string,
-    public value: number,
+    public valueInLovelace: number,
     private readonly assets: TxOutAsset[] | null = null
   ) {
     //--tx-out ADDRESS VALUE
   }
 
   asParameter(): string {
-    let output = `--tx-out ${this.address}+${this.value}`;
+    let output = `--tx-out ${this.address}+${this.valueInLovelace}`;
     if (this.assets) {
       let assetOutput = "";
       this.assets.forEach((asset: TxOutAsset) => {
@@ -216,7 +216,11 @@ export class TxOut {
 }
 
 export class TxOutDatum {
-  private constructor(private paramKey: string, private paramValue: string) {}
+  private constructor(
+    private paramKey: string,
+    private paramValue: string,
+    private isQuoted: boolean = false
+  ) {}
 
   static hash(value: string): TxOutDatum {
     //--tx-out-datum-hash HASH
@@ -257,7 +261,7 @@ export class TxOutDatum {
   static embedValue(value: string): TxOutDatum {
     //--tx-out-datum-embed-value JSON VALUE
     const param = "tx-out-datum-embed-value";
-    return new TxOutDatum(param, value);
+    return new TxOutDatum(param, value, true);
   }
 
   static inlineCborFile(value: string): TxOutDatum {
@@ -275,11 +279,15 @@ export class TxOutDatum {
   static inlineValue(value: string): TxOutDatum {
     //--tx-out-inline-datum-value JSON VALUE
     const param = "tx-out-inline-datum-value";
-    return new TxOutDatum(param, value);
+    return new TxOutDatum(param, value, true);
   }
 
   asParameter(): string {
-    return `--${this.paramKey} ${this.paramValue}`;
+    if (this.isQuoted) {
+      return `--${this.paramKey} '${this.paramValue}'`;
+    } else {
+      return `--${this.paramKey} ${this.paramValue}`;
+    }
   }
 }
 
@@ -291,7 +299,7 @@ export class TxOutParameter {
   ) {}
 
   setLovelaveValue(value: number) {
-    this.txOut.value = value;
+    this.txOut.valueInLovelace = value;
   }
 
   asParameter(): string {
@@ -383,13 +391,10 @@ export class TransactionSignOptions {
 }
 
 export class TransactionSubmitOptions {
-  constructor(
-    public readonly txFile:string,
-  ) {}
-
+  constructor(public readonly txFile: string) {}
 }
 
-export class TxIdTx{
+export class TxIdTx {
   private constructor(private paramKey: string, private paramValue: string) {}
 
   static bodyFile(value: string): TxIdTx {
@@ -406,12 +411,8 @@ export class TxIdTx{
   asParameter(): string {
     return `--${this.paramKey} ${this.paramValue}`;
   }
-
 }
 
-export class TxIdOptions{
-constructor(
-  public readonly tx:TxIdTx
-){
-}
+export class TxIdOptions {
+  constructor(public readonly tx: TxIdTx) {}
 }
