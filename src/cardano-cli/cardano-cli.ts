@@ -73,7 +73,7 @@ export class CardanoCli {
     this.ensureProtocolParametersPathExist();
   }
 
-  ensureTempDirectoryExists(): void {
+  private ensureTempDirectoryExists(): void {
     const tempDirPath = `${this.dir}/tmp`;
     if (!fs.existsSync(tempDirPath)) this.runCommand(`mkdir -p ${tempDirPath}`);
   }
