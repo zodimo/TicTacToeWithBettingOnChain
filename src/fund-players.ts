@@ -19,7 +19,7 @@ const player1 = cardanocliJs.wallet("player1");
 const player2 = cardanocliJs.wallet("player2");
 // ensure players has funds.
 
-console.log(cardanocliJs.queryUtxo(jaco.paymentAddr));
+// console.log(cardanocliJs.queryUtxo(jaco.paymentAddr));
 
 export interface Utxo {
   txHash: string;
@@ -42,7 +42,7 @@ const txInfo = {
 
 let raw = cardanocliJs.transactionBuildRaw(txInfo);
 
-console.log(raw);
+// console.log(raw);
 
 //calculate fee
 let fee = cardanocliJs.transactionCalculateMinFee({
