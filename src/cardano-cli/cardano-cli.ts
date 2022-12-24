@@ -37,7 +37,7 @@ export class CardanoCliOptions implements CardanoCliOptionsInterface {
     public readonly era: string,
     public readonly network: Network,
     public readonly cliPath: string | null = null,
-    public readonly debug: boolean | null = null
+    public debug: boolean | null = null
   ) {}
 }
 
@@ -56,7 +56,7 @@ export class CardanoCli {
     this.cliPath = "cardano-cli";
     this.debug = true;
 
-    options.debug && (this.debug = options.debug);
+    options.debug !== null && (this.debug = options.debug);
 
     this.shelleyGenesis = JSON.parse(
       this.runCommand(`cat ${options.shelleyGenesisPath}`)
@@ -67,18 +67,21 @@ export class CardanoCli {
     options.dir && (this.dir = options.dir);
     options.cliPath && (this.cliPath = options.cliPath);
 
-
     this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
 
-    this.runCommand(`mkdir -p ${this.dir}/tmp`);
+    this.ensureTempDirectoryExists();
     this.ensureProtocolParametersPathExist();
   }
 
-  private runCommand(command:string):string{
+  ensureTempDirectoryExists(): void {
+    const tempDirPath = `${this.dir}/tmp`;
+    if (!fs.existsSync(tempDirPath)) this.runCommand(`mkdir -p ${tempDirPath}`);
+  }
 
-    const formattedCommand=command.replace(/\s+/g, " ");
-    if(this.debug){
-      console.log("DEBUG: " + formattedCommand)
+  private runCommand(command: string): string {
+    const formattedCommand = command.replace(/\s+/g, " ");
+    if (this.debug) {
+      console.log("DEBUG: " + formattedCommand);
     }
     return execSync(formattedCommand).toString();
   }
@@ -260,13 +263,15 @@ export class CardanoCli {
     options: TransactionCalculateMinFeeOptions
   ): number {
     return parseInt(
-      this.runCommand(`${this.cliPath} transaction calculate-min-fee \
+      this.runCommand(
+        `${this.cliPath} transaction calculate-min-fee \
                 --tx-body-file ${options.txBodyFile} \
                 --tx-in-count ${options.txInCount} \
                 --tx-out-count ${options.txOutCount} \
                 ${this.network.asParameter()} \
                 --witness-count ${options.witnessCount} \
-                --protocol-params-file ${this.protocolParametersFile}`)
+                --protocol-params-file ${this.protocolParametersFile}`
+      )
         .replace(/\s+/g, " ")
         .split(" ")[0]
     );
