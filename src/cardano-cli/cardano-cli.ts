@@ -27,6 +27,7 @@ export interface CardanoCliOptionsInterface {
   dir: string;
   era: string;
   network: Network;
+  debug: boolean | null;
 }
 
 export class CardanoCliOptions implements CardanoCliOptionsInterface {
@@ -35,7 +36,8 @@ export class CardanoCliOptions implements CardanoCliOptionsInterface {
     public readonly dir: string,
     public readonly era: string,
     public readonly network: Network,
-    public readonly cliPath: string | null = null
+    public readonly cliPath: string | null = null,
+    public readonly debug: boolean | null = null
   ) {}
 }
 
@@ -46,14 +48,18 @@ export class CardanoCli {
   cliPath: string;
   shelleyGenesis: string;
   protocolParametersFile: string;
+  debug: boolean;
 
   constructor(options: CardanoCliOptionsInterface) {
     //defaults
     this.dir = ".";
     this.cliPath = "cardano-cli";
+    this.debug = true;
+
+    options.debug && (this.debug = options.debug);
 
     this.shelleyGenesis = JSON.parse(
-      execSync(`cat ${options.shelleyGenesisPath}`).toString()
+      this.runCommand(`cat ${options.shelleyGenesisPath}`)
     );
 
     this.era = "--" + options.era + "-era";
@@ -61,17 +67,27 @@ export class CardanoCli {
     options.dir && (this.dir = options.dir);
     options.cliPath && (this.cliPath = options.cliPath);
 
+
     this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
 
-    execSync(`mkdir -p ${this.dir}/tmp`);
+    this.runCommand(`mkdir -p ${this.dir}/tmp`);
     this.ensureProtocolParametersPathExist();
+  }
+
+  private runCommand(command:string):string{
+
+    const formattedCommand=command.replace(/\s+/g, " ");
+    if(this.debug){
+      console.log("DEBUG: " + formattedCommand)
+    }
+    return execSync(formattedCommand).toString();
   }
 
   queryTip() {
     return JSON.parse(
-      execSync(`${this.cliPath} query tip \
+      this.runCommand(`${this.cliPath} query tip \
         ${this.network.asParameter()} \
-        --cardano-mode`).toString()
+        --cardano-mode`)
     );
   }
 
@@ -128,14 +144,14 @@ export class CardanoCli {
   queryUtxo(address: string) {
     const UID = Math.random().toString(36).slice(2, 9);
     const utxosTempFile = `${this.dir}/tmp/utxo_${UID}.json`;
-    execSync(`${this.cliPath} query utxo \
+    this.runCommand(`${this.cliPath} query utxo \
     ${this.network.asParameter()} \
     --address ${address} \
     --cardano-mode \
     --out-file ${utxosTempFile}
     `);
 
-    const utxosRaw = JSON.parse(execSync(`cat ${utxosTempFile}`).toString());
+    const utxosRaw = JSON.parse(this.runCommand(`cat ${utxosTempFile}`));
     // remove temp file.
     fs.rmSync(utxosTempFile);
 
@@ -207,19 +223,19 @@ export class CardanoCli {
     --out-file ${this.dir}/tmp/tx_${UID}.raw \
     --protocol-params-file ${this.protocolParametersFile}`;
 
-    execSync(command);
+    this.runCommand(command);
 
     return `${this.dir}/tmp/tx_${UID}.raw`;
   }
 
   queryProtocolParameters() {
     return JSON.parse(
-      execSync(`cat ${this.dir}/tmp/protocolParams.json`).toString()
+      this.runCommand(`cat ${this.dir}/tmp/protocolParams.json`)
     );
   }
 
   writeProtocolParametersFile(): void {
-    execSync(`${this.cliPath} query protocol-parameters \
+    this.runCommand(`${this.cliPath} query protocol-parameters \
     ${this.network.asParameter()} \
     --cardano-mode \
     --out-file ${this.dir}/tmp/protocolParams.json
@@ -244,14 +260,13 @@ export class CardanoCli {
     options: TransactionCalculateMinFeeOptions
   ): number {
     return parseInt(
-      execSync(`${this.cliPath} transaction calculate-min-fee \
+      this.runCommand(`${this.cliPath} transaction calculate-min-fee \
                 --tx-body-file ${options.txBodyFile} \
                 --tx-in-count ${options.txInCount} \
                 --tx-out-count ${options.txOutCount} \
                 ${this.network.asParameter()} \
                 --witness-count ${options.witnessCount} \
                 --protocol-params-file ${this.protocolParametersFile}`)
-        .toString()
         .replace(/\s+/g, " ")
         .split(" ")[0]
     );
@@ -259,7 +274,7 @@ export class CardanoCli {
 
   transactionSign(options: TransactionSignOptions): string {
     const UID = Math.random().toString(36).slice(2, 9);
-    execSync(`${this.cliPath} transaction sign \
+    this.runCommand(`${this.cliPath} transaction sign \
         ${options.txToSign.asParameter()} \
         ${this.network.asParameter()} \
         ${options.signingKeyFiles.asParameter()} \
@@ -270,15 +285,19 @@ export class CardanoCli {
 
   transactionSubmit(options: TransactionSubmitOptions) {
     let UID = Math.random().toString(36).slice(2, 9);
-    execSync(
-      `${this.cliPath} transaction submit ${this.network.asParameter()} --tx-file ${options.txFile}`
+    this.runCommand(
+      `${
+        this.cliPath
+      } transaction submit ${this.network.asParameter()} --tx-file ${
+        options.txFile
+      }`
     );
 
     return this.transactionTxid(new TxIdOptions(TxIdTx.file(options.txFile)));
   }
 
   transactionTxid(options: TxIdOptions): string {
-    return execSync(
+    return this.runCommand(
       `${this.cliPath} transaction txid ${options.tx.asParameter()}`
     )
       .toString()
