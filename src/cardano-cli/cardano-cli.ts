@@ -97,16 +97,15 @@ export class CardanoCli {
     );
   }
 
-  scriptWallet(account:string):ScriptWallet{
+  scriptWallet(account: string): ScriptWallet {
     const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
     if (!fs.existsSync(paymentAddrFile)) {
-        throw new Error(`Payment Address for ${account} does not exist.`);
+      throw new Error(`Payment Address for ${account} does not exist.`);
     }
     const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
 
-    return new ScriptWallet (account, paymentAddr);
-
-}
+    return new ScriptWallet(account, paymentAddr);
+  }
 
   wallet(account: string): Wallet {
     const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
@@ -169,8 +168,11 @@ export class CardanoCli {
     `);
 
     const utxosRaw = JSON.parse(this.runCommand(`cat ${utxosTempFile}`));
-    // remove temp file.
-    fs.rmSync(utxosTempFile);
+
+    if (!this.debug) {
+      // remove temp file.
+      fs.rmSync(utxosTempFile);
+    }
 
     let utxoList: Utxo[] = [];
 
