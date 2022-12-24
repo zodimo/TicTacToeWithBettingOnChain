@@ -4,6 +4,10 @@ export class UtxoNativeAsset {
     public readonly assetName: string,
     public readonly quantity: number
   ) {}
+
+  getFullName(): string {
+    return `${this.policyId}.${this.assetName}`;
+  }
 }
 
 export class UtxoValue {
@@ -32,8 +36,8 @@ export interface StackValue {
 }
 
 export class UtxoStack {
-  utxos: Utxo[];
-  value: StackValue;
+  public utxos: Utxo[];
+  private value: StackValue;
 
   constructor(utxos: Utxo[]) {
     this.value = { lovelace: 0 };
@@ -57,7 +61,11 @@ export class UtxoStack {
     this.utxos.push(utxo);
   }
 
-  getValue(): StackValue {
+  getStackValue(): StackValue {
     return this.value;
+  }
+
+  getLoveLaceValue():number{
+    return this.value.lovelace;
   }
 }

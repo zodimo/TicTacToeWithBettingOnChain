@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import fs from "fs";
-import { Wallet } from "./wallet.js";
+import { AddressKeys, Wallet, WalletKeys } from "./wallet.js";
 import {
   StackValue,
   Utxo,
@@ -8,34 +8,46 @@ import {
   UtxoStack,
   UtxoValue,
 } from "./utxo.js";
-import { stringify } from "querystring";
 
-export interface ConstructorOptionsInterface {
+import {
+  TransactionBuildRawOptions,
+  TransactionCalculateMinFeeOptions,
+  TransactionSignOptions,
+  TransactionSubmitOptions,
+  TxIdOptions,
+  TxIdTx,
+} from "./transaction.js";
+import { stringify } from "querystring";
+import { Address } from "@emurgo/cardano-serialization-lib-nodejs";
+import { Network } from "./network.js";
+
+export interface CardanoCliOptionsInterface {
   shelleyGenesisPath: string;
   cliPath: string | null;
   dir: string;
   era: string;
-  network: string;
+  network: Network;
 }
 
-export class ConstructorOptions implements ConstructorOptionsInterface {
+export class CardanoCliOptions implements CardanoCliOptionsInterface {
   constructor(
     public readonly shelleyGenesisPath: string,
     public readonly dir: string,
     public readonly era: string,
-    public readonly network: string,
+    public readonly network: Network,
     public readonly cliPath: string | null = null
   ) {}
 }
 
 export class CardanoCli {
-  network: string;
+  network: Network;
   era: string;
   dir: string;
   cliPath: string;
   shelleyGenesis: string;
+  protocolParametersFile: string;
 
-  constructor(options: ConstructorOptionsInterface) {
+  constructor(options: CardanoCliOptionsInterface) {
     //defaults
     this.dir = ".";
     this.cliPath = "cardano-cli";
@@ -48,22 +60,44 @@ export class CardanoCli {
     this.network = options.network;
     options.dir && (this.dir = options.dir);
     options.cliPath && (this.cliPath = options.cliPath);
+
+    this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
+
+    execSync(`mkdir -p ${this.dir}/tmp`);
+    this.ensureProtocolParametersPathExist();
   }
 
   queryTip() {
     return JSON.parse(
       execSync(`${this.cliPath} query tip \
-        --${this.network} \
-        --cardano-mode
-                        `).toString()
+        ${this.network.asParameter()} \
+        --cardano-mode`).toString()
     );
   }
 
   wallet(account: string): Wallet {
     const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+    const paymentAddrSigningKeyFile = `${this.dir}/priv/wallet/${account}/${account}.payment.skey`;
+    const paymentAddrVerificationKeyFile = `${this.dir}/priv/wallet/${account}/${account}.payment.vkey`;
+
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
     }
+
+    if (!fs.existsSync(paymentAddrVerificationKeyFile)) {
+      throw new Error(
+        `Payment Verification Key for ${account} does not exist.`
+      );
+    }
+
+    if (!fs.existsSync(paymentAddrSigningKeyFile)) {
+      throw new Error(`Payment Signing Key for ${account} does not exist.`);
+    }
+
+    const paymentkeys = new AddressKeys(
+      paymentAddrVerificationKeyFile,
+      paymentAddrSigningKeyFile
+    );
 
     const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
 
@@ -78,7 +112,12 @@ export class CardanoCli {
         .toString();
     }
 
-    return new Wallet(account, paymentAddr, stakingAddr);
+    return new Wallet(
+      account,
+      paymentAddr,
+      stakingAddr,
+      new WalletKeys(paymentkeys)
+    );
   }
 
   getUtxoStackFor(paymentAddr: string): UtxoStack {
@@ -90,7 +129,7 @@ export class CardanoCli {
     const UID = Math.random().toString(36).slice(2, 9);
     const utxosTempFile = `${this.dir}/tmp/utxo_${UID}.json`;
     execSync(`${this.cliPath} query utxo \
-    --${this.network} \
+    ${this.network.asParameter()} \
     --address ${address} \
     --cardano-mode \
     --out-file ${utxosTempFile}
@@ -143,5 +182,106 @@ export class CardanoCli {
     });
 
     return utxoList;
+  }
+
+  transactionBuildRaw(options: TransactionBuildRawOptions): string {
+    let UID = Math.random().toString(36).slice(2, 9);
+
+    // building txIn string
+    let txInString: string = "";
+    options.txIn.forEach((value) => {
+      txInString += ` ${value.asParameter()}`;
+    });
+
+    // building txOut string
+    let txOutString: string = "";
+    options.txOut.forEach((value) => {
+      txOutString += ` ${value.asParameter()}`;
+    });
+
+    const command = `${this.cliPath} transaction build-raw \
+    ${this.era} \
+    ${txInString} \
+    ${txOutString} \
+    --fee ${options.fee ? options.fee : 0} \
+    --out-file ${this.dir}/tmp/tx_${UID}.raw \
+    --protocol-params-file ${this.protocolParametersFile}`;
+
+    execSync(command);
+
+    return `${this.dir}/tmp/tx_${UID}.raw`;
+  }
+
+  queryProtocolParameters() {
+    return JSON.parse(
+      execSync(`cat ${this.dir}/tmp/protocolParams.json`).toString()
+    );
+  }
+
+  writeProtocolParametersFile(): void {
+    execSync(`${this.cliPath} query protocol-parameters \
+    ${this.network.asParameter()} \
+    --cardano-mode \
+    --out-file ${this.dir}/tmp/protocolParams.json
+`);
+  }
+
+  ensureProtocolParametersPathExist(): void {
+    if (!fs.existsSync(this.protocolParametersFile)) {
+      this.writeProtocolParametersFile();
+    }
+  }
+
+  toLovelace(ada: number): number {
+    return ada * 1000000;
+  }
+
+  toAda(lovelace: number): number {
+    return lovelace / 1000000;
+  }
+
+  transactionCalculateMinFee(
+    options: TransactionCalculateMinFeeOptions
+  ): number {
+    return parseInt(
+      execSync(`${this.cliPath} transaction calculate-min-fee \
+                --tx-body-file ${options.txBodyFile} \
+                --tx-in-count ${options.txInCount} \
+                --tx-out-count ${options.txOutCount} \
+                ${this.network.asParameter()} \
+                --witness-count ${options.witnessCount} \
+                --protocol-params-file ${this.protocolParametersFile}`)
+        .toString()
+        .replace(/\s+/g, " ")
+        .split(" ")[0]
+    );
+  }
+
+  transactionSign(options: TransactionSignOptions): string {
+    const UID = Math.random().toString(36).slice(2, 9);
+    execSync(`${this.cliPath} transaction sign \
+        ${options.txToSign.asParameter()} \
+        ${this.network.asParameter()} \
+        ${options.signingKeyFiles.asParameter()} \
+        ${options.address.asParameter()} \
+        --out-file ${this.dir}/tmp/tx_${UID}.signed`);
+    return `${this.dir}/tmp/tx_${UID}.signed`;
+  }
+
+  transactionSubmit(options: TransactionSubmitOptions) {
+    let UID = Math.random().toString(36).slice(2, 9);
+    execSync(
+      `${this.cliPath} transaction submit ${this.network.asParameter()} --tx-file ${options.txFile}`
+    );
+
+    return this.transactionTxid(new TxIdOptions(TxIdTx.file(options.txFile)));
+  }
+
+  transactionTxid(options: TxIdOptions): string {
+    return execSync(
+      `${this.cliPath} transaction txid ${options.tx.asParameter()}`
+    )
+      .toString()
+      .trim();
   }
 }
