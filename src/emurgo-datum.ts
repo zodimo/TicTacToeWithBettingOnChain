@@ -3,7 +3,6 @@ import * as a from "@emurgo/cardano-serialization-lib-nodejs";
 // @see https://docs.cardano.org/cardano-components/cardano-serialization-lib/
 // @see https://github.com/Emurgo/cardano-serialization-lib/tree/master/doc/getting-started
 
-
 // plutus types
 // data Row = Row_A| Row_B | Row_C deriving Show
 // data Column = Col_1 | Col_2 | Col_3 deriving Show
@@ -23,7 +22,7 @@ export enum Column {
   Col_2,
   Col_3,
 }
-class Move {
+export class Move {
   constructor(private readonly row: Row, private readonly column: Column) {}
 
   get data(): a.ConstrPlutusData {
@@ -33,19 +32,19 @@ class Move {
         rowData = a.ConstrPlutusData.new(
           a.BigNum.from_str("0"),
           a.PlutusList.new()
-        );;
+        );
         break;
       case Row.Row_B:
         rowData = a.ConstrPlutusData.new(
           a.BigNum.from_str("1"),
           a.PlutusList.new()
-        );;
+        );
         break;
       case Row.Row_C:
         rowData = a.ConstrPlutusData.new(
           a.BigNum.from_str("2"),
           a.PlutusList.new()
-        );;
+        );
         break;
       default:
         throw new Error(`Non-existent row in switch: ${this.row}`);
@@ -57,55 +56,50 @@ class Move {
         columnData = a.ConstrPlutusData.new(
           a.BigNum.from_str("0"),
           a.PlutusList.new()
-        );;
+        );
         break;
       case Column.Col_2:
         columnData = a.ConstrPlutusData.new(
           a.BigNum.from_str("1"),
           a.PlutusList.new()
-        );;
+        );
         break;
       case Column.Col_3:
         columnData = a.ConstrPlutusData.new(
           a.BigNum.from_str("2"),
           a.PlutusList.new()
-        );;
+        );
         break;
 
       default:
         throw new Error(`Non-existent row in switch: ${this.column}`);
     }
 
-    const plutusList=a.PlutusList.new()
+    const plutusList = a.PlutusList.new();
     plutusList.add(a.PlutusData.new_constr_plutus_data(rowData));
     plutusList.add(a.PlutusData.new_constr_plutus_data(columnData));
-    return a.ConstrPlutusData.new(
-      a.BigNum.from_str("0"),
-      plutusList
-      )
+    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson(){
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema)
+  toScriptDataJson() {
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(
+      PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema
+    );
   }
-
 }
 
-class PlutusScriptDataJsonSchema{
+class PlutusScriptDataJsonSchema {
   // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
-  static get ScriptDataJsonNoSchema(){
-      return 0;
+  static get ScriptDataJsonNoSchema() {
+    return 0;
   }
-  static get ScriptDataJsonDetailedSchema(){
+  static get ScriptDataJsonDetailedSchema() {
     return 1;
   }
 }
 
-
-
 // const move = new Move(Row.Row_A,Column.Col_3);
 // console.log(a.PlutusData.from_hex(move.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema));
-
 
 //  data StartGameData = StartGameData
 //  { gameBetInAda:: Integer
@@ -114,33 +108,33 @@ class PlutusScriptDataJsonSchema{
 
 // PlutusTx.makeIsDataIndexed ''StartGameData [('StartGameData,0)]
 
-
-
-
-export class StartGameData{
+export class StartGameData {
   constructor(
     public readonly gameBetInAda: Number,
-    public readonly deadlineInMins: Number,
-  ){}
+    public readonly deadlineInMins: Number = 30
+  ) {}
 
   get data(): a.ConstrPlutusData {
-
-    const plutusList=a.PlutusList.new()
-    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.gameBetInAda.toString())));
-    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.deadlineInMins.toString())));
-
-    return a.ConstrPlutusData.new(
-      a.BigNum.from_str("0"),
-      plutusList
+    const plutusList = a.PlutusList.new();
+    plutusList.add(
+      a.PlutusData.new_integer(a.BigInt.from_str(this.gameBetInAda.toString()))
+    );
+    plutusList.add(
+      a.PlutusData.new_integer(
+        a.BigInt.from_str(this.deadlineInMins.toString())
       )
+    );
+
+    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson(){
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema)
+  toScriptDataJson() {
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(
+      PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema
+    );
   }
 }
 
-const startGameData:StartGameData=new StartGameData(10,15);
-console.log(startGameData.data.to_hex());
-console.log(startGameData.toScriptDataJson());
-
+// const startGameData:StartGameData=new StartGameData(10,15);
+// console.log(startGameData.data.to_hex());
+// console.log(startGameData.toScriptDataJson());
