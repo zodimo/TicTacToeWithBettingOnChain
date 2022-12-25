@@ -17,8 +17,6 @@ import {
   TxIdOptions,
   TxIdTx,
 } from "./transaction.js";
-import { stringify } from "querystring";
-import { Address } from "@emurgo/cardano-serialization-lib-nodejs";
 import { Network } from "./network.js";
 import { PaymentAddressBuildOptions } from "./address.js";
 import { Era } from "./era.js";

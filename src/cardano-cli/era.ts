@@ -1,26 +1,26 @@
 export class Era {
   private constructor(private era: string) {}
 
-  byron(): Era {
+  static byron(): Era {
     return new Era("byron");
   }
 
-  shelly(): Era {
+  static shelly(): Era {
     return new Era("shelly");
   }
 
-  allegra(): Era {
+  static allegra(): Era {
     return new Era("allegra");
   }
 
-  mary(): Era {
+  static mary(): Era {
     return new Era("mary");
   }
 
-  alonzo(): Era {
+  static alonzo(): Era {
     return new Era("mary");
   }
-  babbage(): Era {
+  static babbage(): Era {
     return new Era("babbage");
   }
 
