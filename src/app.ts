@@ -1,3 +1,12 @@
-import cardanocliJs from "./previewCardanoCliJs.js";
+import {cardanoCli} from "./previewCardanoCliJs.js";
+import {Data} from "lucid-cardano"
 
-console.log(cardanocliJs.queryTip());
+
+
+
+
+console.log(cardanoCli.queryTip());
+
+
+
+

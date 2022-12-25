@@ -1,5 +1,4 @@
-import { cardanoCli } from "./new-cardano-cli.js";
-import fs from "fs";
+import { cardanoCli } from "./previewCardanoCliJs.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PaymentAddressBuildOptions, PaymentVerification } from "./cardano-cli/address.js";

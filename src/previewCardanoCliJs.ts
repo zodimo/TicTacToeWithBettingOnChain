@@ -1,4 +1,6 @@
-import CardanocliJs from "cardanocli-js";
+import { CardanoCli, CardanoCliOptions } from "./cardano-cli/cardano-cli.js";
+import {Network} from "./cardano-cli/network.js"
+
 import os from "os";
 import path from "path";
 
@@ -12,17 +14,12 @@ const shelleyPath = path.join(
   "shelley-genesis.json"
 );
 
-const cardanocliJs = new CardanocliJs({
-  network: "testnet-magic 2",
-  era: "babbage",
-  dir: dir,
-  shelleyGenesisPath: shelleyPath,
-  socketPath: path.join(
-    os.homedir(),
-    "CardanoProjects",
-    "testnet",
-    "node.socket"
-  ),
-});
+const network = Network.testnetMagic(2);
 
-export default cardanocliJs;
+const cardanoCliOptions= new CardanoCliOptions(shelleyPath, dir, "babbage",network);
+cardanoCliOptions.debug=true;
+
+
+export const cardanoCli = new CardanoCli(
+  cardanoCliOptions
+);

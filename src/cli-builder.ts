@@ -1,6 +1,6 @@
 import { Builder } from "./cardano-cli-builder/builder.js";
 import { CardanoCliBin } from "./cardano-cli-builder/cardano-cli-bin.js";
-import { cardanoCli } from "./new-cardano-cli.js";
+import { cardanoCli } from "./previewCardanoCliJs.js";
 
 const builder = new Builder(new CardanoCliBin("cardano-cli"));
 
