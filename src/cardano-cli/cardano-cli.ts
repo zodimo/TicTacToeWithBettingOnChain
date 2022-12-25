@@ -21,41 +21,47 @@ import { stringify } from "querystring";
 import { Address } from "@emurgo/cardano-serialization-lib-nodejs";
 import { Network } from "./network.js";
 import { PaymentAddressBuildOptions } from "./address.js";
+import { Era } from "./era.js";
+import { NodeMode } from "./node-mode.js";
 
 export interface CardanoCliOptionsInterface {
   shelleyGenesisPath: string;
   cliPath: string | null;
   dir: string;
-  era: string;
+  era: Era;
   network: Network;
   debug: boolean | null;
+  nodeMode: NodeMode | null;
 }
 
 export class CardanoCliOptions implements CardanoCliOptionsInterface {
   constructor(
     public readonly shelleyGenesisPath: string,
     public readonly dir: string,
-    public readonly era: string,
+    public readonly era: Era,
     public readonly network: Network,
     public readonly cliPath: string | null = null,
+    public readonly nodeMode: NodeMode | null = null,
     public debug: boolean | null = null
   ) {}
 }
 
 export class CardanoCli {
   network: Network;
-  era: string;
+  era: Era;
   dir: string;
   cliPath: string;
   shelleyGenesis: string;
   protocolParametersFile: string;
   debug: boolean;
+  nodeMode: NodeMode;
 
   constructor(options: CardanoCliOptionsInterface) {
     //defaults
     this.dir = ".";
     this.cliPath = "cardano-cli";
     this.debug = true;
+    this.nodeMode = NodeMode.cardano();
 
     options.debug !== null && (this.debug = options.debug);
 
@@ -63,10 +69,11 @@ export class CardanoCli {
       this.runCommand(`cat ${options.shelleyGenesisPath}`)
     );
 
-    this.era = "--" + options.era + "-era";
+    this.era = options.era;
     this.network = options.network;
     options.dir && (this.dir = options.dir);
     options.cliPath && (this.cliPath = options.cliPath);
+    options.nodeMode && (this.nodeMode = options.nodeMode);
 
     this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
 
@@ -93,7 +100,7 @@ export class CardanoCli {
     return JSON.parse(
       this.runCommand(`${this.cliPath} query tip \
         ${this.network.asParameter()} \
-        --cardano-mode`)
+        ${this.nodeMode.asParameter}`)
     );
   }
 
@@ -164,7 +171,7 @@ export class CardanoCli {
     this.runCommand(`${this.cliPath} query utxo \
     ${this.network.asParameter()} \
     --address ${address} \
-    --cardano-mode \
+    ${this.nodeMode.asParameter()} \
     --out-file ${utxosTempFile}
     `);
 
@@ -236,7 +243,7 @@ export class CardanoCli {
     });
 
     const command = `${this.cliPath} transaction build-raw \
-    ${this.era} \
+    ${this.era.asParameter()} \
     ${txInString} \
     ${txOutString} \
     --fee ${options.fee ? options.fee : 0} \
@@ -257,7 +264,7 @@ export class CardanoCli {
   writeProtocolParametersFile(): void {
     this.runCommand(`${this.cliPath} query protocol-parameters \
     ${this.network.asParameter()} \
-    --cardano-mode \
+    ${this.nodeMode.asParameter()} \
     --out-file ${this.dir}/tmp/protocolParams.json
 `);
   }
