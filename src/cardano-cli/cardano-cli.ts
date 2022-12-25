@@ -98,7 +98,8 @@ export class CardanoCli {
   }
 
   scriptWallet(account: string): ScriptWallet {
-    const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+    const paymentAddrFile =
+      this.createPaymentAddressFileNameForAccount(account);
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
     }
@@ -108,9 +109,12 @@ export class CardanoCli {
   }
 
   wallet(account: string): Wallet {
-    const paymentAddrFile = `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
-    const paymentAddrSigningKeyFile = `${this.dir}/priv/wallet/${account}/${account}.payment.skey`;
-    const paymentAddrVerificationKeyFile = `${this.dir}/priv/wallet/${account}/${account}.payment.vkey`;
+    const paymentAddrFile =
+      this.createPaymentAddressFileNameForAccount(account);
+    const paymentAddrSigningKeyFile =
+      this.createPaymentSKeyFileNameForAccount(account);
+    const paymentAddrVerificationKeyFile =
+      this.createPaymentVKeyFileNameForAccount(account);
 
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
@@ -133,15 +137,12 @@ export class CardanoCli {
 
     const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
 
-    const stakingAddrFile = `${this.dir}/priv/wallet/${account}/${account}.stake.addr`;
+    const stakingAddrFile =
+      this.createStakingAddressFileNameForAccount(account);
 
     let stakingAddr: string | null = null;
     if (fs.existsSync(stakingAddrFile)) {
-      stakingAddr = fs
-        .readFileSync(
-          `${this.dir}/priv/wallet/${account}/${account}.stake.addr`
-        )
-        .toString();
+      stakingAddr = fs.readFileSync(stakingAddrFile).toString();
     }
 
     return new Wallet(
@@ -326,19 +327,29 @@ export class CardanoCli {
   }
 
   /**
+   * Wallet
+   */
+  createWalletPathForAccount(account: string): string {
+    return `${this.dir}/priv/wallet/${account}`;
+  }
+
+  /**
    * Payment Address
    */
 
   createPaymentSKeyFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.payment.skey`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.payment.skey`;
   }
 
   createPaymentVKeyFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.payment.vkey`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.payment.vkey`;
   }
 
   createPaymentAddressFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.payment.addr`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.payment.addr`;
   }
 
   paymentAddressKeyGen(account: string): AddressKeys {
@@ -347,7 +358,7 @@ export class CardanoCli {
 
     this.ensureKeysDoNoAlreadyExist(vkey, skey);
 
-    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.ensurePathExists(this.createWalletPathForAccount(account));
     this.runCommand(`${this.cliPath} address key-gen \
                         --verification-key-file ${vkey} \
                         --signing-key-file ${skey}
@@ -358,7 +369,7 @@ export class CardanoCli {
   paymentAddressBuild(account: string, options: PaymentAddressBuildOptions) {
     const paymentAddressFileName =
       this.createPaymentAddressFileNameForAccount(account);
-    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.ensurePathExists(this.createWalletPathForAccount(account));
 
     let stakingAddressString: string = "";
     if (options.stakingVerification) {
@@ -379,15 +390,18 @@ export class CardanoCli {
    */
 
   createStakingSKeyFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.stake.skey`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.stake.skey`;
   }
 
   createStakingVKeyFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.stake.vkey`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.stake.vkey`;
   }
 
   createStakingAddressFileNameForAccount(account: string): string {
-    return `${this.dir}/priv/wallet/${account}/${account}.stake.addr`;
+    const walletPath = this.createWalletPathForAccount(account);
+    return `${walletPath}/${account}.stake.addr`;
   }
 
   stakeAddressKeyGen(account: string): AddressKeys {
@@ -395,7 +409,7 @@ export class CardanoCli {
     const skey = this.createStakingSKeyFileNameForAccount(account);
 
     this.ensureKeysDoNoAlreadyExist(vkey, skey);
-    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.ensurePathExists(this.createWalletPathForAccount(account));
     this.runCommand(`${this.cliPath} stake-address key-gen \
                         --verification-key-file ${vkey} \
                         --signing-key-file ${skey}
@@ -404,7 +418,7 @@ export class CardanoCli {
   }
 
   stakeAddressBuild(account: string): string {
-    this.ensurePathExists(`${this.dir}/priv/wallet/${account}`);
+    this.ensurePathExists(this.createWalletPathForAccount(account));
     const stakingVKeyFileName =
       this.createStakingVKeyFileNameForAccount(account);
     const stakingAddrFileName =
