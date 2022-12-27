@@ -1,39 +1,17 @@
 # build-raw options (help)
 ```text
   Usage: cardano-cli transaction build-raw 
-            [ --byron-era
-            | --shelley-era
-            | --allegra-era
-            | --mary-era
-            | --alonzo-era
-            | --babbage-era
-            ]
+            [ --byron-era | --shelley-era | --allegra-era | --mary-era | --alonzo-era | --babbage-era ]
             [--script-valid | --script-invalid]
             (--tx-in TX-IN
               [ --spending-tx-in-reference TX-IN
                 --spending-plutus-script-v2
-                ( --spending-reference-tx-in-datum-cbor-file CBOR FILE
-                | --spending-reference-tx-in-datum-file JSON FILE
-                | --spending-reference-tx-in-datum-value JSON VALUE
-                | --spending-reference-tx-in-inline-datum-present
-                )
-                ( --spending-reference-tx-in-redeemer-cbor-file CBOR FILE
-                | --spending-reference-tx-in-redeemer-file JSON FILE
-                | --spending-reference-tx-in-redeemer-value JSON VALUE
-                )
-                --spending-reference-tx-in-execution-units (INT, INT)
-              | --simple-script-tx-in-reference TX-IN
-              | --tx-in-script-file FILE
+                ( --spending-reference-tx-in-datum-cbor-file CBOR FILE | --spending-reference-tx-in-datum-file JSON FILE | --spending-reference-tx-in-datum-value JSON VALUE | --spending-reference-tx-in-inline-datum-present)
+                ( --spending-reference-tx-in-redeemer-cbor-file CBOR FILE | --spending-reference-tx-in-redeemer-file JSON FILE | --spending-reference-tx-in-redeemer-value JSON VALUE )
+                --spending-reference-tx-in-execution-units (INT, INT) | --simple-script-tx-in-reference TX-IN | --tx-in-script-file FILE
                 [
-                  ( --tx-in-datum-cbor-file CBOR FILE
-                  | --tx-in-datum-file JSON FILE
-                  | --tx-in-datum-value JSON VALUE
-                  | --tx-in-inline-datum-present
-                  )
-                  ( --tx-in-redeemer-cbor-file CBOR FILE
-                  | --tx-in-redeemer-file JSON FILE
-                  | --tx-in-redeemer-value JSON VALUE
-                  )
+                  ( --tx-in-datum-cbor-file CBOR FILE | --tx-in-datum-file JSON FILE | --tx-in-datum-value JSON VALUE | --tx-in-inline-datum-present )
+                  ( --tx-in-redeemer-cbor-file CBOR FILE | --tx-in-redeemer-file JSON FILE | --tx-in-redeemer-value JSON VALUE )
                   --tx-in-execution-units (INT, INT)]
               ])
             [--read-only-tx-in-reference TX-IN]
@@ -41,37 +19,22 @@
             [--tx-out-return-collateral ADDRESS VALUE]
             [--tx-total-collateral INTEGER]
             [--required-signer FILE | --required-signer-hash HASH]
-            [--tx-out ADDRESS VALUE
-              [ --tx-out-datum-hash HASH
-              | --tx-out-datum-hash-cbor-file CBOR FILE
-              | --tx-out-datum-hash-file JSON FILE
-              | --tx-out-datum-hash-value JSON VALUE
-              | --tx-out-datum-embed-cbor-file CBOR FILE
-              | --tx-out-datum-embed-file JSON FILE
-              | --tx-out-datum-embed-value JSON VALUE
-              | --tx-out-inline-datum-cbor-file CBOR FILE
-              | --tx-out-inline-datum-file JSON FILE
-              | --tx-out-inline-datum-value JSON VALUE
-              ]
-              [--tx-out-reference-script-file FILE]]
+            [--tx-out ADDRESS VALUE 
+              [ --tx-out-datum-hash HASH | --tx-out-datum-hash-cbor-file CBOR FILE | --tx-out-datum-hash-file JSON FILE | --tx-out-datum-hash-value JSON VALUE | --tx-out-datum-embed-cbor-file CBOR FILE | --tx-out-datum-embed-file JSON FILE | --tx-out-datum-embed-value JSON VALUE | --tx-out-inline-datum-cbor-file CBOR FILE | --tx-out-inline-datum-file JSON FILE | --tx-out-inline-datum-value JSON VALUE ]
+              [--tx-out-reference-script-file FILE]
+            ]
             [--mint VALUE
               ( --mint-script-file FILE
                 [
-                  ( --mint-redeemer-cbor-file CBOR FILE
-                  | --mint-redeemer-file JSON FILE
-                  | --mint-redeemer-value JSON VALUE
-                  )
-                  --mint-execution-units (INT, INT)]
-              | --simple-minting-script-tx-in-reference TX-IN --policy-id HASH
-              | --mint-tx-in-reference TX-IN
+                  ( --mint-redeemer-cbor-file CBOR FILE | --mint-redeemer-file JSON FILE | --mint-redeemer-value JSON VALUE )
+                  --mint-execution-units (INT, INT)
+                ] | --simple-minting-script-tx-in-reference TX-IN --policy-id HASH | --mint-tx-in-reference TX-IN 
                 --mint-plutus-script-v2
-                ( --mint-reference-tx-in-redeemer-cbor-file CBOR FILE
-                | --mint-reference-tx-in-redeemer-file JSON FILE
-                | --mint-reference-tx-in-redeemer-value JSON VALUE
-                )
+                ( --mint-reference-tx-in-redeemer-cbor-file CBOR FILE | --mint-reference-tx-in-redeemer-file JSON FILE | --mint-reference-tx-in-redeemer-value JSON VALUE )
                 --mint-reference-tx-in-execution-units (INT, INT)
                 --policy-id HASH
-              )]
+              )
+            ]
             [--invalid-before SLOT]
             [--invalid-hereafter SLOT]
             [--fee LOVELACE]
