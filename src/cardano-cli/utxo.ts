@@ -65,7 +65,17 @@ export class UtxoStack {
     return this.value;
   }
 
-  getLoveLaceValue():number{
+  getLoveLaceValue(): number {
     return this.value.lovelace;
+  }
+
+  hasUtxo(utxoId: string): boolean {
+    const foundUtxo = this.utxos.find((utxo) => {
+      if (utxo.id == utxoId) {
+        return true;
+      }
+    });
+
+    return !!foundUtxo;
   }
 }
