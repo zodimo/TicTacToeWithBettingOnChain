@@ -466,4 +466,31 @@ export class CardanoCli {
       );
     }
   }
+
+  private sleep(seconds: number) {
+    return this.runCommand(`sleep ${seconds}`);
+  }
+
+  waitForUtxoAtPaymentAddress(
+    paymentAddress: string,
+    utxoId: string,
+    timoutInSeconds: number = 60
+  ): void {
+    let sleepCounter = 0;
+    while (true) {
+      if (!this.getUtxoStackFor(paymentAddress).hasUtxo(utxoId)) {
+        if (this.debug) {
+          console.log(`Waiting for TX: ${utxoId} [${sleepCounter}s]`);
+        }
+        this.sleep(1);
+        sleepCounter++;
+      } else {
+        // utxo is there exit loop.
+        break;
+      }
+      if (sleepCounter >= timoutInSeconds) {
+        throw new Error(`Timeout exceeded, waiting for utxo.`);
+      }
+    }
+  }
 }
