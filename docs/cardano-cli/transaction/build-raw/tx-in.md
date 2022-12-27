@@ -40,8 +40,7 @@ extracted text from cardano-cli transaction build-raw -h
 ```text
             (
               --tx-in TX-IN
-              [
-                   
+              [                   
                 --spending-tx-in-reference TX-IN
                 --spending-plutus-script-v2
                 (   
