@@ -10,18 +10,16 @@ import {
   UtxoValue,
 } from "./utxo.js";
 
-import {
-  TransactionBuildRawOptions,
-  TransactionCalculateMinFeeOptions,
-  TransactionSignOptions,
-  TransactionSubmitOptions,
-  TxIdOptions,
-  TxIdTx,
-} from "./transaction.js";
 import { Network } from "./network.js";
 import { PaymentAddressBuildOptions } from "./address.js";
 import { Era } from "./era.js";
 import { NodeMode } from "./node-mode.js";
+import { TransactionBuildOptions } from "./transaction-build.js";
+import { TransactionBuildRawOptions } from "./transaction/buid-raw.js";
+import { TransactionCalculateMinFeeOptions } from "./transaction/calculate-min-fee.js";
+import { TransactionSignOptions } from "./transaction/sign.js";
+import { TransactionSubmitOptions } from "./transaction/submit.js";
+import { TxIdOptions, TxIdTx } from "./transaction/txid.js";
 
 export interface CardanoCliOptionsInterface {
   shelleyGenesisPath: string;
@@ -494,4 +492,61 @@ export class CardanoCli {
       }
     }
   }
+
+  // transactionBuild(options:TransactionBuildOptions) {
+
+    
+  //   let UID = Math.random().toString(36).slice(2, 9);
+  //   const txInString = txInToString(this.dir, options.txIn);
+  //   const txOutString = txOutToString(options.txOut);
+  //   const txInCollateralString = options.txInCollateral
+  //     ? txInToString(this.dir, options.txInCollateral, true)
+  //     : "";
+  //   const changeAddressString = options.changeAddress
+  //     ? `--change-address ${options.changeAddress}`
+  //     : "";
+  //   const mintString = options.mint ? mintToString(this.dir, options.mint) : "";
+  //   const withdrawals = options.withdrawals
+  //     ? withdrawalToString(this.dir, options.withdrawals)
+  //     : "";
+  //   const certs = options.certs ? certToString(this.dir, options.certs) : "";
+  //   const metadata = options.metadata
+  //     ? "--metadata-json-file " +
+  //       jsonToPath(this.dir, options.metadata, "metadata")
+  //     : "";
+  //   const auxScript = options.auxScript
+  //     ? auxScriptToString(this.dir, options.auxScript)
+  //     : "";
+  //   const scriptInvalid = options.scriptInvalid ? "--script-invalid" : "";
+  //   const witnessOverride = options.witnessOverride
+  //     ? `--witness-override ${options.witnessOverride}`
+  //     : "";
+  //   if (!this.protocolParametersPath) this.queryProtocolParameters();
+  //   this.runCommand(`${this.cliPath} transaction build \
+  //               ${txInString} \
+  //               ${txOutString} \
+  //               ${txInCollateralString} \
+  //               ${certs} \
+  //               ${withdrawals} \
+  //               ${mintString} \
+  //               ${auxScript} \
+  //               ${metadata} \
+  //               ${scriptInvalid} \
+  //               ${witnessOverride} \
+  //               --invalid-hereafter ${
+  //                 options.invalidAfter
+  //                   ? options.invalidAfter
+  //                   : this.queryTip().slot + 10000
+  //               } \
+  //               --invalid-before ${
+  //                 options.invalidBefore ? options.invalidBefore : 0
+  //               } \
+  //               --out-file ${this.dir}/tmp/tx_${UID}.raw \
+  //               ${changeAddressString} \
+  //               --${this.network} \
+  //               --protocol-params-file ${this.protocolParametersPath} \
+  //               ${this.era}`);
+
+  //   return `${this.dir}/tmp/tx_${UID}.raw`;
+  // }
 }

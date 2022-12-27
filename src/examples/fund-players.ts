@@ -1,16 +1,11 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { createWallet } from "../create-wallet.js";
-import {
-  TransactionBuildRawOptions,
-  TxInParameter,
-  TxOutParameter,
-  TxOut,
-  TransactionCalculateMinFeeOptions,
-  TransactionSignOptions,
-  TxToSign,
-  SigningKeyFiles,
-  TransactionSubmitOptions,
-} from "../cardano-cli/transaction.js";
+import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw.js";
+import { TxInParameter } from "../cardano-cli/transaction/build-raw/tx-in.js";
+import { TxOut, TxOutParameter } from "../cardano-cli/transaction/build-raw/tx-out.js";
+import { TransactionCalculateMinFeeOptions } from "../cardano-cli/transaction/calculate-min-fee.js";
+import { SigningKeyFiles, TransactionSignOptions, TxToSign } from "../cardano-cli/transaction/sign.js";
+import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit.js";
 
 //ensure node is running.
 try {
@@ -30,12 +25,6 @@ const player2 = cardanoCli.wallet("player2");
 // ensure players has funds.
 
 // console.log(cardanoCli.queryUtxo(jaco.paymentAddr));
-
-export interface Utxo {
-  txHash: string;
-  txId: number;
-  value: any;
-}
 
 const lovaceToTransfer=cardanoCli.toLovelace(300);
 let jacoLovelaceChangeValue: number =

@@ -1,19 +1,13 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { StartGameData } from "../emurgo-datum.js";
-import {
-  SigningKeyFiles,
-  TransactionBuildRawOptions,
-  TransactionCalculateMinFeeOptions,
-  TransactionSignOptions,
-  TransactionSubmitOptions,
-  TxInParameter,
-  TxOut,
-  TxOutDatum,
-  TxOutParameter,
-  TxToSign,
-} from "../cardano-cli/transaction.js";
 import { getScriptAddress } from "../smart-contract.js";
 import { UtxoId } from "../cardano-cli/utxo.js";
+import { TxInParameter } from "../cardano-cli/transaction/build-raw/tx-in.js";
+import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw.js";
+import { TxOut, TxOutDatum, TxOutParameter } from "../cardano-cli/transaction/build-raw/tx-out.js";
+import { TransactionCalculateMinFeeOptions } from "../cardano-cli/transaction/calculate-min-fee.js";
+import { SigningKeyFiles, TransactionSignOptions, TxToSign } from "../cardano-cli/transaction/sign.js";
+import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit.js";
 
 const startGameDatum = new StartGameData(50);
 
