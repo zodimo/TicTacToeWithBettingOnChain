@@ -13,6 +13,7 @@ import {
   TxToSign,
 } from "../cardano-cli/transaction.js";
 import { getScriptAddress } from "../smart-contract.js";
+import { UtxoId } from "../cardano-cli/utxo.js";
 
 const startGameDatum = new StartGameData(50);
 
@@ -28,7 +29,7 @@ const paymentAddressAsInput: (paymentAddress: string) => TxInParameter[] = (
 ) => {
   return cardanoCli
     .queryUtxo(paymentAddress)
-    .map((utxo) => new TxInParameter(utxo.id));
+    .map((utxo) => new TxInParameter(utxo.id.toString()));
 };
 
 const scriptAddress = getScriptAddress();
@@ -85,7 +86,7 @@ let txHash = cardanoCli.transactionSubmit(
 );
 console.log("TxHash: " + txHash);
 
-const utxoId = `${txHash}#1`;
+const utxoId = new UtxoId(txHash, 1);
 
 //wait for transaction to arrive
 cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, utxoId);

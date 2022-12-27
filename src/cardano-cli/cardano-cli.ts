@@ -4,6 +4,7 @@ import { AddressKeys, ScriptWallet, Wallet, WalletKeys } from "./wallet.js";
 import {
   StackValue,
   Utxo,
+  UtxoId,
   UtxoNativeAsset,
   UtxoStack,
   UtxoValue,
@@ -211,7 +212,7 @@ export class CardanoCli {
       const utxoValue = new UtxoValue(lovelace, utxoNativeAssets);
       utxoList.push(
         new Utxo(
-          utxo,
+          UtxoId.fromString(utxo),
           utxoBody.address,
           utxoValue,
           utxoBody.datum,
@@ -473,7 +474,7 @@ export class CardanoCli {
 
   waitForUtxoAtPaymentAddress(
     paymentAddress: string,
-    utxoId: string,
+    utxoId: UtxoId,
     timoutInSeconds: number = 60
   ): void {
     let sleepCounter = 0;

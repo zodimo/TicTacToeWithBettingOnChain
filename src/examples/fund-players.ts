@@ -45,7 +45,7 @@ const txBuildOptions: TransactionBuildRawOptions =
   new TransactionBuildRawOptions(
     cardanoCli
       .queryUtxo(jaco.paymentAddr)
-      .map((utxo) => new TxInParameter(utxo.id)),
+      .map((utxo) => new TxInParameter(utxo.id.toString())),
     [
       new TxOutParameter(
         new TxOut(
