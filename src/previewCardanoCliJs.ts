@@ -1,24 +1,11 @@
 import { CardanoCli, CardanoCliOptions } from "./cardano-cli/cardano-cli.js";
-import { Network } from "./cardano-cli/network.js";
+import { config } from "./cardano-cli-config.js";
 
-import os from "os";
-import path from "path";
-import { Era } from "./cardano-cli/era.js";
-
-const dir = path.join(os.homedir(), "CardanoProjects", "testnet");
-const shelleyPath = path.join(
-  os.homedir(),
-  "CardanoProjects",
-  "testnet",
-  "config",
-  "preview",
-  "shelley-genesis.json"
+const cardanoCliOptions = new CardanoCliOptions(
+  config.getWorkingDirectory(),
+  config.getEra(),
+  config.getNetwork()
 );
-
-const network = Network.testnetMagic(2);
-const era = Era.babbage();
-
-const cardanoCliOptions = new CardanoCliOptions(shelleyPath, dir, era, network);
-cardanoCliOptions.debug = true;
+cardanoCliOptions.debug = config.getDebug();
 
 export const cardanoCli = new CardanoCli(cardanoCliOptions);
