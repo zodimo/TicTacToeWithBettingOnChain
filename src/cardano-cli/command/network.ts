@@ -1,5 +1,9 @@
-export class Network {
-  private constructor(private paramKey: string, private paramValue: string) {}
+import { CommandParameter } from "./command-parameter.js";
+
+export class Network extends CommandParameter {
+  private constructor(private paramKey: string, private paramValue: string) {
+    super();
+  }
 
   static mainnet(): Network {
     //--mainnet

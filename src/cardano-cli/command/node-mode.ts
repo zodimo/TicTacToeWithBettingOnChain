@@ -1,5 +1,9 @@
-export class NodeMode {
-  private constructor(private mode: string) {}
+import { CommandParameter } from "./command-parameter.js";
+
+export class NodeMode  extends CommandParameter{
+  private constructor(private mode: string) {
+    super();
+  }
 
   static shelley(): NodeMode {
     return new NodeMode("shelley");
