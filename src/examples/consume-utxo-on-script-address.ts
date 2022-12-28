@@ -1,15 +1,16 @@
-import { UtxoId, UtxoStack } from "../cardano-cli/utxo.js";
+import { UtxoId } from "../cardano-cli/utxo-id.js";
+import { UtxoStack } from "../cardano-cli/utxo.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { getScriptAddress } from "../smart-contract.js";
 
 const scriptAddress = getScriptAddress();
-const utxoStackAtScriptAddress = cardanoCli.getUtxoStackFor(scriptAddress);
+const utxoStackAtScriptAddress = cardanoCli.getUtxoStackForAddress(scriptAddress);
 
 //destination wallet
 const jacoWallet = cardanoCli.wallet("jaco");
 
 const scriptUtxoStack = new UtxoStack(
-  cardanoCli.queryUtxo(scriptAddress).filter((utxo) => {
+  cardanoCli.getUtxoListForAddress(scriptAddress).filter((utxo) => {
     //with inline datum
     return !!utxo.inlineDatum;
   })

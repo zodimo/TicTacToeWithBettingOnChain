@@ -1,4 +1,4 @@
-import { UtxoId } from "../cardano-cli/utxo.js";
+import { UtxoId } from "../cardano-cli/utxo-id.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { getScriptAddress } from "../smart-contract.js";
 const scriptAddress = getScriptAddress();

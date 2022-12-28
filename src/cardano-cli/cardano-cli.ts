@@ -1,28 +1,36 @@
 import { execSync } from "child_process";
 import fs from "fs";
 import { AddressKeys, ScriptWallet, Wallet, WalletKeys } from "./wallet.js";
+import { UtxoId } from "./utxo-id.js";
 import {
   StackValue,
   Utxo,
-  UtxoId,
   UtxoNativeAsset,
   UtxoStack,
   UtxoValue,
 } from "./utxo.js";
 
-import { Network } from "./network.js";
+import { Network } from "./command/network.js";
 import { PaymentAddressBuildOptions } from "./address.js";
 import { Era } from "./era.js";
-import { NodeMode } from "./node-mode.js";
 import { TransactionBuildOptions } from "./transaction-build.js";
-import { TransactionBuildRawOptions } from "./transaction/buid-raw.js";
-import { TransactionCalculateMinFeeOptions } from "./transaction/calculate-min-fee.js";
-import { TransactionSignOptions } from "./transaction/sign.js";
-import { TransactionSubmitOptions } from "./transaction/submit.js";
-import { TxIdOptions, TxIdTx } from "./transaction/txid.js";
+import { TransactionBuildRawOptions } from "./transaction/buid-raw-options.js";
+import { TransactionCalculateMinFeeOptions } from "./transaction/calculate-min-fee-options.js";
+import { TransactionSignOptions } from "./transaction/sign-options.js";
+import { TransactionSubmitOptions } from "./transaction/submit-options.js";
+import { TxIdOptions } from "./transaction/tx-id-options.js";
+import { Query } from "./command/query.js";
+import { runCommand } from "./run-command.js";
+import { ensureTempDirectoryExists, createTempFilename } from "./temp-dir.js";
+import { Transaction } from "./command/transaction.js";
+import { NodeMode } from "./command/node-mode.js";
+import { OutFile } from "./command/shared/out-file.js";
+import { Filter } from "./command/query/utxo/filter.js";
+import { ProtocolParamsFile } from "./command/shared/protocol-params-file.js";
+import { SigningKeyFile } from "./command/transaction/sign/signing-key-file.js";
+import { TxIdTx } from "./command/transaction/tx-id.js";
 
 export interface CardanoCliOptionsInterface {
-  shelleyGenesisPath: string;
   cliPath: string | null;
   dir: string;
   era: Era;
@@ -33,7 +41,6 @@ export interface CardanoCliOptionsInterface {
 
 export class CardanoCliOptions implements CardanoCliOptionsInterface {
   constructor(
-    public readonly shelleyGenesisPath: string,
     public readonly dir: string,
     public readonly era: Era,
     public readonly network: Network,
@@ -48,7 +55,6 @@ export class CardanoCli {
   era: Era;
   dir: string;
   cliPath: string;
-  shelleyGenesis: string;
   protocolParametersFile: string;
   debug: boolean;
   nodeMode: NodeMode;
@@ -62,43 +68,38 @@ export class CardanoCli {
 
     options.debug !== null && (this.debug = options.debug);
 
-    this.shelleyGenesis = JSON.parse(
-      this.runCommand(`cat ${options.shelleyGenesisPath}`)
-    );
-
     this.era = options.era;
     this.network = options.network;
     options.dir && (this.dir = options.dir);
     options.cliPath && (this.cliPath = options.cliPath);
     options.nodeMode && (this.nodeMode = options.nodeMode);
 
-    this.protocolParametersFile = `${this.dir}/tmp/protocolParams.json`;
+    this.protocolParametersFile = this.createTempFilename(
+      "protocolParams.json"
+    );
 
-    this.ensureTempDirectoryExists();
+    ensureTempDirectoryExists();
 
     this.writeProtocolParametersFile();
     this.ensureProtocolParametersFileExist();
   }
 
-  private ensureTempDirectoryExists(): void {
-    const tempDirPath = `${this.dir}/tmp`;
-    if (!fs.existsSync(tempDirPath)) this.runCommand(`mkdir -p ${tempDirPath}`);
+  private createTempFilename(filename: string): string {
+    return createTempFilename(filename);
   }
 
   private runCommand(command: string): string {
-    const formattedCommand = command.replace(/\s+/g, " ");
-    if (this.debug) {
-      console.log("DEBUG: " + formattedCommand);
-    }
-    return execSync(formattedCommand).toString().trim();
+    return runCommand(command);
   }
 
-  queryTip() {
-    return JSON.parse(
-      this.runCommand(`${this.cliPath} query tip \
-        ${this.network.asParameter()} \
-        ${this.nodeMode.asParameter}`)
-    );
+  query(): Query {
+    // low level command
+    return new Query(this.cliPath);
+  }
+
+  transaction(): Transaction {
+    // low level command
+    return new Transaction(this.cliPath);
   }
 
   scriptWallet(account: string): ScriptWallet {
@@ -157,20 +158,22 @@ export class CardanoCli {
     );
   }
 
-  getUtxoStackFor(paymentAddr: string): UtxoStack {
-    const utxos = this.queryUtxo(paymentAddr);
+  getUtxoStackForAddress(paymentAddr: string): UtxoStack {
+    const utxos = this.getUtxoListForAddress(paymentAddr);
     return new UtxoStack(utxos);
   }
 
-  queryUtxo(address: string) {
+  getUtxoListForAddress(address: string): Utxo[] {
     const UID = Math.random().toString(36).slice(2, 9);
-    const utxosTempFile = `${this.dir}/tmp/utxo_${UID}.json`;
-    this.runCommand(`${this.cliPath} query utxo \
-    ${this.network.asParameter()} \
-    --address ${address} \
-    ${this.nodeMode.asParameter()} \
-    --out-file ${utxosTempFile}
-    `);
+    const utxosTempFile = this.createTempFilename(`utxo_${UID}.json`);
+
+    this.query()
+      .utxo((builder) => {
+        builder.withOutFile(new OutFile(utxosTempFile));
+        builder.withFilter(Filter.address(address));
+        return builder;
+      })
+      .runCommand();
 
     const utxosRaw = JSON.parse(this.runCommand(`cat ${utxosTempFile}`));
 
@@ -225,45 +228,40 @@ export class CardanoCli {
   }
 
   transactionBuildRaw(options: TransactionBuildRawOptions): string {
+    //higher order function
+
     let UID = Math.random().toString(36).slice(2, 9);
+    const outFileName = createTempFilename(`tx_${UID}.raw`);
 
-    // building txIn string
-    let txInString: string = "";
-    options.txIn.forEach((value) => {
-      txInString += ` ${value.asParameter()}`;
-    });
+    this.transaction()
+      .buildRaw((builder) => {
+        //tx-in
+        options.getTxIns().map((txInParameter) => {
+          builder.withTxIn(txInParameter);
+        });
+        //tx-out
+        options.getTxOuts().map((txOutParameter) => {
+          builder.withTxOut(txOutParameter);
+        });
+        builder.withFee(options.getFee());
+        builder.withOutFile(new OutFile(outFileName));
+        builder.withProtocolParamsFile(
+          new ProtocolParamsFile(this.protocolParametersFile)
+        );
+        return builder;
+      })
+      .runCommand();
 
-    // building txOut string
-    let txOutString: string = "";
-    options.txOut.forEach((value) => {
-      txOutString += ` ${value.asParameter()}`;
-    });
-
-    const command = `${this.cliPath} transaction build-raw \
-    ${this.era.asParameter()} \
-    ${txInString} \
-    ${txOutString} \
-    --fee ${options.fee ? options.fee : 0} \
-    --out-file ${this.dir}/tmp/tx_${UID}.raw \
-    --protocol-params-file ${this.protocolParametersFile}`;
-
-    this.runCommand(command);
-
-    return `${this.dir}/tmp/tx_${UID}.raw`;
-  }
-
-  queryProtocolParameters() {
-    return JSON.parse(
-      this.runCommand(`cat ${this.dir}/tmp/protocolParams.json`)
-    );
+    return outFileName;
   }
 
   writeProtocolParametersFile(): void {
-    this.runCommand(`${this.cliPath} query protocol-parameters \
-    ${this.network.asParameter()} \
-    ${this.nodeMode.asParameter()} \
-    --out-file ${this.dir}/tmp/protocolParams.json
-`);
+    this.query()
+      .protocolParameters((builder) => {
+        builder.withOutFile(new OutFile(this.protocolParametersFile));
+        return builder;
+      })
+      .runCommand();
   }
 
   toLovelace(ada: number): number {
@@ -277,51 +275,65 @@ export class CardanoCli {
   transactionCalculateMinFee(
     options: TransactionCalculateMinFeeOptions
   ): number {
+    //higher order function
     return parseInt(
-      this.runCommand(
-        `${this.cliPath} transaction calculate-min-fee \
-                --tx-body-file ${options.txBodyFile} \
-                --tx-in-count ${options.txInCount} \
-                --tx-out-count ${options.txOutCount} \
-                ${this.network.asParameter()} \
-                --witness-count ${options.witnessCount} \
-                --protocol-params-file ${this.protocolParametersFile}`
-      )
-        .replace(/\s+/g, " ")
-        .split(" ")[0]
+      this.transaction()
+        .calculateMinFee((builder) => {
+          builder
+            .withTxBodyFile(options.txBodyFile)
+            .withTxInCount(options.txInCount)
+            .withTxOutCount(options.txOutCount)
+            .withWitnessCount(options.witnessCount)
+            .withProtocolParamsFile(
+              new ProtocolParamsFile(this.protocolParametersFile)
+            );
+
+          if (options.byronWitnessCount) {
+            builder.withByronWitnessCount(options.byronWitnessCount);
+          }
+          return builder;
+        })
+        .runCommand()
     );
   }
 
   transactionSign(options: TransactionSignOptions): string {
+    //higher order function
     const UID = Math.random().toString(36).slice(2, 9);
-    this.runCommand(`${this.cliPath} transaction sign \
-        ${options.txToSign.asParameter()} \
-        ${this.network.asParameter()} \
-        ${options.signingKeyFiles.asParameter()} \
-        ${options.address.asParameter()} \
-        --out-file ${this.dir}/tmp/tx_${UID}.signed`);
-    return `${this.dir}/tmp/tx_${UID}.signed`;
+    const outFile = this.createTempFilename(`tx_${UID}.signed`);
+    this.transaction()
+      .sign((builder) => {
+        builder.withTxToSign(options.txToSign);
+        options.signingKeyFiles.map((signingKeyFile) => {
+          builder.withSigningKeyFile(signingKeyFile);
+        });
+        builder.withOutFile(new OutFile(outFile));
+        return builder;
+      })
+      .runCommand();
+    return `${outFile}`;
   }
 
   transactionSubmit(options: TransactionSubmitOptions) {
-    let UID = Math.random().toString(36).slice(2, 9);
-    this.runCommand(
-      `${
-        this.cliPath
-      } transaction submit ${this.network.asParameter()} --tx-file ${
-        options.txFile
-      }`
-    );
+    //higher order function
+    this.transaction()
+      .submit((builder) => {
+        builder.withTxFile(options.txFile);
+        return builder;
+      })
+      .runCommand();
 
     return this.transactionTxid(new TxIdOptions(TxIdTx.file(options.txFile)));
   }
 
   transactionTxid(options: TxIdOptions): string {
-    return this.runCommand(
-      `${this.cliPath} transaction txid ${options.tx.asParameter()}`
-    )
-      .toString()
-      .trim();
+    //higher order function
+    return this.transaction()
+      .txId((builder) => {
+        builder.withTx(options.tx);
+        return builder;
+      })
+      .runCommand();
   }
 
   transactionPolicyid(scriptFile: string) {
@@ -477,7 +489,7 @@ export class CardanoCli {
   ): void {
     let sleepCounter = 0;
     while (true) {
-      if (!this.getUtxoStackFor(paymentAddress).hasUtxo(utxoId)) {
+      if (!this.getUtxoStackForAddress(paymentAddress).hasUtxo(utxoId)) {
         if (this.debug) {
           console.log(`Waiting for TX: ${utxoId} [${sleepCounter}s]`);
         }
@@ -495,7 +507,6 @@ export class CardanoCli {
 
   // transactionBuild(options:TransactionBuildOptions) {
 
-    
   //   let UID = Math.random().toString(36).slice(2, 9);
   //   const txInString = txInToString(this.dir, options.txIn);
   //   const txOutString = txOutToString(options.txOut);

@@ -1,23 +1,19 @@
-export class TxIdTx {
+export class TxToSign {
     private constructor(private paramKey: string, private paramValue: string) {}
   
-    static bodyFile(value: string): TxIdTx {
+    static txBodyFile(value: string): TxToSign {
       //--tx-body-file FILE
       const param = "tx-body-file";
-      return new TxIdTx(param, value);
+      return new TxToSign(param, value);
     }
-    static file(value: string): TxIdTx {
+    static txFile(value: string): TxToSign {
       //--tx-file FILE
       const param = "tx-file";
-      return new TxIdTx(param, value);
+      return new TxToSign(param, value);
     }
   
     asParameter(): string {
       return `--${this.paramKey} ${this.paramValue}`;
     }
-  }
-  
-  export class TxIdOptions {
-    constructor(public readonly tx: TxIdTx) {}
   }
   

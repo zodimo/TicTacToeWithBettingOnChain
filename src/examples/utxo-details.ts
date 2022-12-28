@@ -1,4 +1,5 @@
-import { UtxoId, UtxoStack } from "../cardano-cli/utxo.js";
+import { UtxoId } from "../cardano-cli/utxo-id.js";
+import { UtxoStack } from "../cardano-cli/utxo.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { getScriptAddress } from "../smart-contract.js";
 import * as a from "@emurgo/cardano-serialization-lib-nodejs";
@@ -8,7 +9,7 @@ const utxoIdWithDatum = UtxoId.fromString(
   "0b1f727faf5804730933617782cd69e877e57a9e2f594d958b51d3de52b35133#1"
 );
 
-const utxoStack = cardanoCli.getUtxoStackFor(scriptAddress);
+const utxoStack = cardanoCli.getUtxoStackForAddress(scriptAddress);
 
 utxoStack.utxos.map((utxo) => {
   if (utxo.id.equals(utxoIdWithDatum)) {

@@ -2,6 +2,7 @@ import { config } from "../../../cardano-cli-config.js";
 import { Network } from "../network.js";
 import { NodeMode } from "../node-mode.js";
 import { Command } from "../command.js";
+import { OutFile } from "../shared/out-file.js";
 
 /*
 Usage: cardano-cli query tip 
@@ -15,7 +16,7 @@ Usage: cardano-cli query tip
 export class Tip extends Command{
   private network: Network;
   private nodeMode: NodeMode;
-  private outFile?: string;
+  private outFile?: OutFile;
   constructor(private commandPrefix: string) {
       super();
     this.network = config.getNetwork();
@@ -32,7 +33,7 @@ export class Tip extends Command{
     return this;
   }
 
-  withOutFile(outFile: string): Tip {
+  withOutFile(outFile: OutFile): Tip {
     this.outFile = outFile;
     return this;
   }
@@ -43,7 +44,7 @@ export class Tip extends Command{
     }
     ouput.push(this.network.asParameter());
     if (this.outFile) {
-      ouput.push(`--out-file ${this.outFile}`);
+      ouput.push(this.outFile.asParameter());
     }
     return ouput.join(" ");
   }
