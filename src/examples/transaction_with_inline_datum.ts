@@ -1,13 +1,23 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { StartGameData } from "../emurgo-datum.js";
 import { getScriptAddress } from "../smart-contract.js";
-import { UtxoId } from "../cardano-cli/utxo.js";
-import { TxInParameter } from "../cardano-cli/transaction/build-raw/tx-in.js";
-import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw.js";
-import { TxOut, TxOutDatum, TxOutParameter } from "../cardano-cli/transaction/build-raw/tx-out.js";
-import { TransactionCalculateMinFeeOptions } from "../cardano-cli/transaction/calculate-min-fee.js";
-import { SigningKeyFiles, TransactionSignOptions, TxToSign } from "../cardano-cli/transaction/sign.js";
-import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit.js";
+import {
+  TxIn,
+  TxInParameter,
+} from "../cardano-cli/command/transaction/build-raw/tx-in.js";
+import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw-options.js";
+import {
+  TxOut,
+  TxOutDatum,
+  TxOutParameter,
+} from "../cardano-cli/command/transaction/build-raw/tx-out.js";
+import { TransactionCalculateMinFeeOptions } from "../cardano-cli/transaction/calculate-min-fee-options.js";
+import { Fee } from "../cardano-cli/command/shared/fee.js";
+import { TransactionSignOptions } from "../cardano-cli/transaction/sign-options.js";
+import { TxToSign } from "../cardano-cli/command/transaction/sign/tx-to-sign.js";
+import { SigningKeyFile } from "../cardano-cli/command/transaction/sign/signing-key-file.js";
+import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit-options.js";
+import { UtxoId } from "../cardano-cli/utxo-id.js";
 
 const startGameDatum = new StartGameData(50);
 
@@ -22,8 +32,8 @@ const paymentAddressAsInput: (paymentAddress: string) => TxInParameter[] = (
   paymentAddress
 ) => {
   return cardanoCli
-    .queryUtxo(paymentAddress)
-    .map((utxo) => new TxInParameter(utxo.id.toString()));
+    .getUtxoListForAddress(paymentAddress)
+    .map((utxo) => new TxInParameter(new TxIn(utxo.id)));
 };
 
 const scriptAddress = getScriptAddress();
@@ -31,24 +41,29 @@ const scriptAddress = getScriptAddress();
 const sendLovelaceToScript = cardanoCli.toLovelace(5);
 //calculate change without fees to start with
 let jacoWalletChangeInLovelace =
-  cardanoCli.getUtxoStackFor(jacoWallet.paymentAddr).getLoveLaceValue() -
+  cardanoCli.getUtxoStackForAddress(jacoWallet.paymentAddr).getLoveLaceValue() -
   sendLovelaceToScript;
 
-const transactionBuildRawOptions = new TransactionBuildRawOptions(
-  paymentAddressAsInput(jacoWallet.paymentAddr),
-  [
-    new TxOutParameter(
-      new TxOut(jacoWallet.paymentAddr, jacoWalletChangeInLovelace)
-    ),
-    new TxOutParameter(
-      new TxOut(scriptAddress, sendLovelaceToScript),
-      TxOutDatum.inlineValue(startGameDatum.toScriptDataJson())
-    ),
-  ]
-);
+const createTransactionBuildRawOptionsForChangeAndFee: (
+  changeInLovelace: number,
+  fee: number
+) => TransactionBuildRawOptions = (changeInLovelace, fee) => {
+  return new TransactionBuildRawOptions(
+    paymentAddressAsInput(jacoWallet.paymentAddr),
+    [
+      new TxOutParameter(new TxOut(jacoWallet.paymentAddr, changeInLovelace)),
+      new TxOutParameter(
+        new TxOut(scriptAddress, sendLovelaceToScript),
+        TxOutDatum.inlineValue(startGameDatum.toScriptDataJson())
+      ),
+    ],
+    new Fee(fee)
+  );
+};
+
 //draft transaction
 const draftTransactionBodyFile = cardanoCli.transactionBuildRaw(
-  transactionBuildRawOptions
+  createTransactionBuildRawOptionsForChangeAndFee(jacoWalletChangeInLovelace, 0)
 );
 
 // calculate transaction fees
@@ -60,18 +75,21 @@ const fee = cardanoCli.transactionCalculateMinFee(
     1 //witnessCount
   )
 );
-transactionBuildRawOptions.txOut[0].setLovelaveValue(
-  jacoWalletChangeInLovelace - fee
-);
-transactionBuildRawOptions.fee = fee;
+
+// subtract fee from change
+jacoWalletChangeInLovelace = jacoWalletChangeInLovelace - fee;
 
 // sign transaction
-const txBodyToSign = cardanoCli.transactionBuildRaw(transactionBuildRawOptions);
-const signedTransactionFile = cardanoCli.transactionSign(
-  new TransactionSignOptions(
-    TxToSign.txBodyFile(txBodyToSign),
-    new SigningKeyFiles([jacoWallet.keys.payment.signingKeyFile])
+const txBodyToSign = cardanoCli.transactionBuildRaw(
+  createTransactionBuildRawOptionsForChangeAndFee(
+    jacoWalletChangeInLovelace,
+    fee
   )
+);
+const signedTransactionFile = cardanoCli.transactionSign(
+  new TransactionSignOptions(TxToSign.txBodyFile(txBodyToSign), [
+    new SigningKeyFile(jacoWallet.keys.payment.signingKeyFile),
+  ])
 );
 
 //broadcast transaction
