@@ -394,7 +394,7 @@ export class CardanoCli {
 
     this.runCommand(`${this.cliPath} address build \
                     ${options.paymentVerification.asParameter()} \
-                    ${stakingAddressString} 
+                    ${stakingAddressString} \
                     --out-file ${paymentAddressFileName} \
                     ${this.network.asParameter()}
                 `);
