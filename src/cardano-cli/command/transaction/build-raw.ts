@@ -1,4 +1,4 @@
-import { Era } from "../../era.js";
+import { Era } from "../era.js";
 import { Command } from "../command.js";
 import { config } from "../../../cardano-cli-config.js";
 import { CommandBuilder } from "../command-builder.js";

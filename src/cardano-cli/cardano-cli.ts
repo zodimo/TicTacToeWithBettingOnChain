@@ -12,7 +12,7 @@ import {
 
 import { Network } from "./command/network.js";
 import { PaymentAddressBuildOptions } from "./address-build-options.js";
-import { Era } from "./era.js";
+import { Era } from "./command/era.js";
 import { TransactionBuildOptions } from "./transaction-build.js";
 import { TransactionBuildRawOptions } from "./transaction/buid-raw-options.js";
 import { TransactionCalculateMinFeeOptions } from "./transaction/calculate-min-fee-options.js";

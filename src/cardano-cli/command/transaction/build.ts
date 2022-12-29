@@ -1,4 +1,4 @@
-import { Era } from "../../era.js";
+import { Era } from "../era.js";
 import { Command } from "../command.js";
 import { config } from "../../../cardano-cli-config.js";
 import { NodeMode } from "../node-mode.js";
@@ -57,6 +57,7 @@ export class Build extends Command {
   //[--update-proposal-file FILE]
   private updateProposalFile?: string;
   // (--out-file FILE | --calculate-plutus-script-cost FILE)
+  private outputAs?: string;
 
   constructor(private commandPrefix: string) {
     super();

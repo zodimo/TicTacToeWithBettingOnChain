@@ -1,5 +1,9 @@
-export class Era {
-  private constructor(private era: string) {}
+import { CommandParameter } from "./command-parameter.js";
+
+export class Era extends CommandParameter {
+  private constructor(private era: string) {
+    super();
+  }
 
   static byron(): Era {
     return new Era("byron");
