@@ -6,7 +6,7 @@ import { Network } from "../network.js";
 import { Assertion } from "./build/assertion.js";
 import { TxInParameter } from "./build/tx-in.js";
 import { RequiredSigner } from "./build/required-signer.js";
-
+import { TxOutParameter } from "./build/tx-out.js";
 
 export class Build extends Command {
   // --*-era
@@ -32,7 +32,7 @@ export class Build extends Command {
   //[--tx-total-collateral INTEGER]
   private txTotalCollateral?: number;
   // [--tx-out ADDRESS VALUE ...
-  private txOuts?: [];
+  private txOuts: TxOutParameter[];
   //--change-address ADDRESS
   private changeAddress?: string;
   //[--mint VALUE ...
@@ -61,6 +61,7 @@ export class Build extends Command {
     super();
     this.era = config.getEra();
     this.txIns = [];
+    this.txOuts = [];
   }
 
   withEra(era: Era): Build {
@@ -98,6 +99,30 @@ export class Build extends Command {
     return this;
   }
 
+  withTxInCollateral(txInCollateral: string): Build {
+    this.txInCollateral = txInCollateral;
+    return this;
+  }
+
+  withTxOutReturnCollateral(txOutReturnCollateral: string): Build {
+    this.txOutReturnCollateral = txOutReturnCollateral;
+    return this;
+  }
+
+  withTxTotalCollateral(txTotalCollateral: number): Build {
+    this.txTotalCollateral = txTotalCollateral;
+    return this;
+  }
+
+  withTxOuts(txOut: TxOutParameter): Build {
+    this.txOuts.push(txOut);
+    return this;
+  }
+  withChangeAddress(changeAddress: string): Build {
+    this.changeAddress = changeAddress;
+    return this;
+  }
+
   getCommand(): string {
     let ouput: string[] = [this.commandPrefix, "build"];
     if (this.era) {
@@ -122,6 +147,26 @@ export class Build extends Command {
 
     if (this.requiredSigner) {
       ouput.push(this.requiredSigner.asParameter());
+    }
+
+    if (this.txInCollateral) {
+      ouput.push(`--tx-in-collateral ${this.txInCollateral}`);
+    }
+
+    if (this.txOutReturnCollateral) {
+      ouput.push(`--tx-out-return-collateral ${this.txOutReturnCollateral}`);
+    }
+    if (this.txTotalCollateral) {
+      ouput.push(`--tx-total-collateral ${this.txTotalCollateral}`);
+    }
+
+    //tx-out
+    this.txOuts.map((txOutParameter) =>
+      ouput.push(txOutParameter.asParameter())
+    );
+
+    if (this.changeAddress) {
+      ouput.push(`--change-address ${this.changeAddress}`);
     }
 
     return ouput.join(" ");
