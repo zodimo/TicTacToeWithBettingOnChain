@@ -1,5 +1,9 @@
-export class TxToSign {
-    private constructor(private paramKey: string, private paramValue: string) {}
+import { CommandParameter } from "../../command-parameter.js";
+
+export class TxToSign extends CommandParameter{
+    private constructor(private paramKey: string, private paramValue: string) {
+      super();
+    }
   
     static txBodyFile(value: string): TxToSign {
       //--tx-body-file FILE
