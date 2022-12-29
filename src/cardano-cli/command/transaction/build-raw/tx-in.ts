@@ -302,7 +302,7 @@ export class TxInAdditional extends CommandParameter {
 }
 
 export class TxInParameter extends CommandParameter {
-  constructor(private txIn: TxIn, private txInAdditional?: TxInSpending) {
+  constructor(private txIn: TxIn, private txInAdditional?: TxInAdditional) {
     super();
   }
   asParameter(): string {
