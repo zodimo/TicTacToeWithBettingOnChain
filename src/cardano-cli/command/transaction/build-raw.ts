@@ -24,6 +24,11 @@ export class BuildRaw extends Command {
     this.fee = new Fee(0);
   }
 
+  withEra(era: Era): BuildRaw {
+    this.era = era;
+    return this;
+  }
+
   withOutFile(outFile: OutFile): BuildRaw {
     this.outFile = outFile;
     return this;
@@ -77,10 +82,5 @@ export class BuildRaw extends Command {
       ouput.push(this.outFile.asParameter());
     }
     return ouput.join(" ");
-  }
-
-  withEra(era: Era): BuildRaw {
-    this.era = era;
-    return this;
   }
 }
