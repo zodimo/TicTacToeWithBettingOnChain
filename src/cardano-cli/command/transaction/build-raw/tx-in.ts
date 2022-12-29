@@ -306,6 +306,10 @@ export class TxInParameter extends CommandParameter {
     super();
   }
   asParameter(): string {
-    return this.txIn.asParameter();
+    const output: string[] = [this.txIn.asParameter()];
+    if (this.txInAdditional) {
+      output.push(this.txInAdditional.asParameter());
+    }
+    return output.join(" ");
   }
 }
