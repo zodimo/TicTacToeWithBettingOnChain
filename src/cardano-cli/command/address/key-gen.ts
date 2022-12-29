@@ -12,17 +12,17 @@ class KeyType extends CommandParameter {
     super();
   }
 
-  static normal(value: string): KeyType {
+  static normal(): KeyType {
     // --normal-key
     const param = "normal-key";
     return new KeyType(param);
   }
-  static extended(value: string): KeyType {
+  static extended(): KeyType {
     // --extended-key
     const param = "extended-key";
     return new KeyType(param);
   }
-  static byron(value: string): KeyType {
+  static byron(): KeyType {
     // --byron-key
     const param = "byron-key";
     return new KeyType(param);
