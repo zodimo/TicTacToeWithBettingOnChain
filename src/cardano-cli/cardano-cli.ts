@@ -29,6 +29,7 @@ import { Filter } from "./command/query/utxo/filter.js";
 import { ProtocolParamsFile } from "./command/shared/protocol-params-file.js";
 import { SigningKeyFile } from "./command/transaction/sign/signing-key-file.js";
 import { TxIdTx } from "./command/transaction/tx-id.js";
+import { Address } from "./command/address.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -90,6 +91,11 @@ export class CardanoCli {
 
   private runCommand(command: string): string {
     return runCommand(command);
+  }
+
+  address(): Address {
+    // low level command
+    return new Address(this.cliPath);
   }
 
   query(): Query {
@@ -369,16 +375,19 @@ export class CardanoCli {
   }
 
   paymentAddressKeyGen(account: string): AddressKeys {
+    //higher order function
     let vkey = this.createPaymentVKeyFileNameForAccount(account);
     let skey = this.createPaymentSKeyFileNameForAccount(account);
 
     this.ensureKeysDoNoAlreadyExist(vkey, skey);
 
     this.ensurePathExists(this.createWalletPathForAccount(account));
-    this.runCommand(`${this.cliPath} address key-gen \
-                        --verification-key-file ${vkey} \
-                        --signing-key-file ${skey}
-                    `);
+    this.address()
+      .keyGen((builder) => {
+        return builder.withVerificationKeyFile(vkey).withSigningKeyFile(skey);
+      })
+      .runCommand();
+
     return new AddressKeys(vkey, skey);
   }
 
@@ -421,6 +430,7 @@ export class CardanoCli {
   }
 
   stakeAddressKeyGen(account: string): AddressKeys {
+    //higher order function
     const vkey = this.createStakingVKeyFileNameForAccount(account);
     const skey = this.createStakingSKeyFileNameForAccount(account);
 
