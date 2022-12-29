@@ -1,10 +1,8 @@
 import { cardanoCli } from "./previewCardanoCliJs.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import {
-  PaymentAddressBuildOptions,
-  PaymentVerification,
-} from "./cardano-cli/address.js";
+import { PaymentAddressBuildOptions } from "./cardano-cli/address-build-options.js";
+import { PaymentComponent } from "./cardano-cli/command/address/build.js";
 
 export const getScriptFile = () => {
   const __filename = fileURLToPath(import.meta.url);
@@ -18,9 +16,7 @@ export const getScriptAddress = () => {
   const scriptWalletName = "ticTacToeScript";
   cardanoCli.paymentAddressBuild(
     scriptWalletName,
-    new PaymentAddressBuildOptions(
-      PaymentVerification.scriptFile(getScriptFile())
-    )
+    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getScriptFile()))
   );
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
