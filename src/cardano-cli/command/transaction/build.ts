@@ -7,6 +7,7 @@ import { Assertion } from "./build/assertion.js";
 import { TxInParameter } from "./build/tx-in.js";
 import { RequiredSigner } from "./build/required-signer.js";
 import { TxOutParameter } from "./build/tx-out.js";
+import { ProtocolParamsFile } from "../shared/protocol-params-file.js";
 
 export class Build extends Command {
   // --*-era
@@ -17,10 +18,10 @@ export class Build extends Command {
   private network?: Network;
   // [--script-valid | --script-invalid]
   private assertion?: Assertion;
-  //[--witness-override WORD]
+  // [--witness-override WORD]
+  private witnessOverride?: string;
   //(--tx-in TX-IN ...
   private txIns: TxInParameter[];
-
   // [--read-only-tx-in-reference TX-IN]
   private readOnlyTxInReference?: string;
   //[--required-signer FILE | --required-signer-hash HASH]
@@ -52,7 +53,7 @@ export class Build extends Command {
   //[--metadata-json-file FILE | --metadata-cbor-file FILE]
   private metadataFile?: string;
   //[--protocol-params-file FILE]
-  private protocolParamsFile?: string;
+  private protocolParamsFile?: ProtocolParamsFile;
   //[--update-proposal-file FILE]
   private updateProposalFile?: string;
   // (--out-file FILE | --calculate-plutus-script-cost FILE)
@@ -122,6 +123,20 @@ export class Build extends Command {
     this.changeAddress = changeAddress;
     return this;
   }
+  withInvalidBefore(invalidBefore: number): Build {
+    this.invalidBefore = invalidBefore;
+    return this;
+  }
+
+  withInvalidHereafter(invalidHereafter: number): Build {
+    this.invalidHereafter = invalidHereafter;
+    return this;
+  }
+
+  withProtocolParamsFile(protocolParamsFile: ProtocolParamsFile): Build {
+    this.protocolParamsFile = protocolParamsFile;
+    return this;
+  }
 
   getCommand(): string {
     let ouput: string[] = [this.commandPrefix, "build"];
@@ -167,6 +182,17 @@ export class Build extends Command {
 
     if (this.changeAddress) {
       ouput.push(`--change-address ${this.changeAddress}`);
+    }
+
+    if (this.invalidBefore) {
+      ouput.push(`--invalid-before ${this.invalidBefore}`);
+    }
+    if (this.invalidHereafter) {
+      ouput.push(`--invalid-hereaftere ${this.invalidHereafter}`);
+    }
+
+    if (this.protocolParamsFile) {
+      ouput.push(this.protocolParamsFile.asParameter());
     }
 
     return ouput.join(" ");
