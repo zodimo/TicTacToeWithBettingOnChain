@@ -7,7 +7,7 @@ Usage: cardano-cli address key-gen [--normal-key | --extended-key | --byron-key]
 import { Command } from "../command.js";
 import { CommandParameter } from "../command-parameter.js";
 
-class KeyType extends CommandParameter {
+export class KeyType extends CommandParameter {
   private constructor(private paramKey: string) {
     super();
   }

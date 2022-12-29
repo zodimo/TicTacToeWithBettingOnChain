@@ -9,7 +9,7 @@ Usage: cardano-cli address key-hash
             )
             [--out-file FILE]
 */
-class PaymentVerificationKey extends CommandParameter {
+export class PaymentVerificationKey extends CommandParameter {
   private constructor(private paramKey: string, private paramValue: string) {
     super();
   }
