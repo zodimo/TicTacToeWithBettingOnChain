@@ -3,6 +3,7 @@ import { Command } from "./command.js";
 import { BuildRaw } from "./transaction/build-raw.js";
 import { Build } from "./transaction/build.js";
 import { CalculateMinFee } from "./transaction/calculate-min-fee.js";
+import { PolicyId } from "./transaction/policy-id.js";
 import { Sign } from "./transaction/sign.js";
 import { Submit } from "./transaction/submit.js";
 import { TxId } from "./transaction/tx-id.js";
@@ -56,6 +57,14 @@ export class Transaction extends Command {
   }
   txId(builder?: CommandBuilder<TxId>): TxId {
     let command = new TxId(this.getCommand());
+    if (builder) {
+      command = builder(command);
+    }
+    return command;
+  }
+
+  policyId(builder?: CommandBuilder<PolicyId>): PolicyId {
+    let command = new PolicyId(this.getCommand());
     if (builder) {
       command = builder(command);
     }
