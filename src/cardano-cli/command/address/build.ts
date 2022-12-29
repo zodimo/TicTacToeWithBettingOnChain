@@ -42,25 +42,25 @@ export class PaymentComponent extends CommandParameter {
     return `--${this.paramKey} ${this.paramValue}`;
   }
 }
-export class StakingComponent extends CommandParameter {
+export class StakeComponent extends CommandParameter {
   private constructor(private paramKey: string, private paramValue: string) {
     super();
   }
 
-  static verificationKeyValue(value: string): StakingComponent {
+  static verificationKeyValue(value: string): StakeComponent {
     //--stake-verification-key STRING
     const param = "stake-verification-key";
-    return new StakingComponent(param, value);
+    return new StakeComponent(param, value);
   }
-  static verificationKeyFile(value: string): StakingComponent {
+  static verificationKeyFile(value: string): StakeComponent {
     //--stake-verification-key-file FILE
     const param = "stake-verification-key-file";
-    return new StakingComponent(param, value);
+    return new StakeComponent(param, value);
   }
-  static scriptFile(value: string): StakingComponent {
+  static scriptFile(value: string): StakeComponent {
     //--stake-script-file FILE
     const param = "stake-script-file";
-    return new StakingComponent(param, value);
+    return new StakeComponent(param, value);
   }
 
   asParameter(): string {
@@ -70,7 +70,7 @@ export class StakingComponent extends CommandParameter {
 
 export class Build extends Command {
   private paymentComponent?: PaymentComponent;
-  private stakingComponent?: StakingComponent;
+  private stakeComponent?: StakeComponent;
   private network?: Network;
   private outFile?: OutFile;
   constructor(private commandPrefix: string) {
@@ -82,8 +82,8 @@ export class Build extends Command {
     this.paymentComponent = paymentComponent;
     return this;
   }
-  withStakingComponent(stakingComponent: StakingComponent): Build {
-    this.stakingComponent = stakingComponent;
+  withStakeComponent(stakeComponent: StakeComponent): Build {
+    this.stakeComponent = stakeComponent;
     return this;
   }
 
@@ -103,8 +103,8 @@ export class Build extends Command {
     if (this.paymentComponent) {
       ouput.push(this.paymentComponent.asParameter());
     }
-    if (this.stakingComponent) {
-      ouput.push(this.stakingComponent.asParameter());
+    if (this.stakeComponent) {
+      ouput.push(this.stakeComponent.asParameter());
     }
     if (this.network) {
       ouput.push(this.network.asParameter());

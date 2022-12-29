@@ -16,10 +16,10 @@ export class PaymentVerificationKey extends CommandParameter {
 
   static value(value: string): PaymentVerificationKey {
     //--payment-verification-key STRING
-    const param = "normal-key";
+    const param = "payment-verification-key";
     return new PaymentVerificationKey(param, value);
   }
-  static extended(value: string): PaymentVerificationKey {
+  static file(value: string): PaymentVerificationKey {
     // --payment-verification-key-file FILE
     const param = "payment-verification-key-file";
     return new PaymentVerificationKey(param, value);
