@@ -31,6 +31,8 @@ import { SigningKeyFile } from "./command/transaction/sign/signing-key-file.js";
 import { TxIdTx } from "./command/transaction/tx-id.js";
 import { Address } from "./command/address.js";
 import { PaymentComponent } from "./command/address/build.js";
+import { StakeAddress } from "./command/stake-address.js";
+import { StakeComponent } from "./command/stake-address/stake-component.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -97,6 +99,10 @@ export class CardanoCli {
   address(): Address {
     // low level command
     return new Address(this.cliPath);
+  }
+  stakeAddress(): StakeAddress {
+    // low level command
+    return new StakeAddress(this.cliPath);
   }
 
   query(): Query {
@@ -344,9 +350,12 @@ export class CardanoCli {
   }
 
   transactionPolicyid(scriptFile: string) {
-    return this.runCommand(
-      `${this.cliPath} transaction policyid --script-file ${scriptFile}`
-    );
+    //higher order function
+    return this.transaction()
+      .policyId((builder) => {
+        return builder.withScriptFile(scriptFile);
+      })
+      .runCommand();
   }
 
   /**
@@ -401,8 +410,8 @@ export class CardanoCli {
     this.address()
       .build((builder) => {
         builder.withPaymentComponent(options.paymentComponent);
-        if (options.stakingComponent) {
-          builder.withStakingComponent(options.stakingComponent);
+        if (options.stakeComponent) {
+          builder.withStakeComponent(options.stakeComponent);
         }
         builder.withOutFile(new OutFile(paymentAddressFileName));
         return builder;
@@ -438,24 +447,31 @@ export class CardanoCli {
 
     this.ensureKeysDoNoAlreadyExist(vkey, skey);
     this.ensurePathExists(this.createWalletPathForAccount(account));
-    this.runCommand(`${this.cliPath} stake-address key-gen \
-                        --verification-key-file ${vkey} \
-                        --signing-key-file ${skey}
-                    `);
+    this.stakeAddress()
+      .keyGen((builder) => {
+        return builder.withVerificationKeyFile(vkey).withSigningKeyFile(skey);
+      })
+      .runCommand();
+
     return new AddressKeys(vkey, skey);
   }
 
   stakeAddressBuild(account: string): string {
+    //higher order function
     this.ensurePathExists(this.createWalletPathForAccount(account));
     const stakingVKeyFileName =
       this.createStakingVKeyFileNameForAccount(account);
     const stakingAddrFileName =
       this.createStakingVKeyFileNameForAccount(account);
-    this.runCommand(`${this.cliPath} stake-address build \
-                        --staking-verification-key-file ${stakingVKeyFileName} \
-                        --out-file ${stakingAddrFileName} \
-                        ${this.network.asParameter}
-                    `);
+    this.stakeAddress()
+      .build((builder) => {
+        return builder
+          .withStakeComponent(
+            StakeComponent.verificationKeyFile(stakingVKeyFileName)
+          )
+          .withOutFile(new OutFile(stakingAddrFileName));
+      })
+      .runCommand();
     return stakingAddrFileName;
   }
 
@@ -516,60 +532,4 @@ export class CardanoCli {
       }
     }
   }
-
-  // transactionBuild(options:TransactionBuildOptions) {
-
-  //   let UID = Math.random().toString(36).slice(2, 9);
-  //   const txInString = txInToString(this.dir, options.txIn);
-  //   const txOutString = txOutToString(options.txOut);
-  //   const txInCollateralString = options.txInCollateral
-  //     ? txInToString(this.dir, options.txInCollateral, true)
-  //     : "";
-  //   const changeAddressString = options.changeAddress
-  //     ? `--change-address ${options.changeAddress}`
-  //     : "";
-  //   const mintString = options.mint ? mintToString(this.dir, options.mint) : "";
-  //   const withdrawals = options.withdrawals
-  //     ? withdrawalToString(this.dir, options.withdrawals)
-  //     : "";
-  //   const certs = options.certs ? certToString(this.dir, options.certs) : "";
-  //   const metadata = options.metadata
-  //     ? "--metadata-json-file " +
-  //       jsonToPath(this.dir, options.metadata, "metadata")
-  //     : "";
-  //   const auxScript = options.auxScript
-  //     ? auxScriptToString(this.dir, options.auxScript)
-  //     : "";
-  //   const scriptInvalid = options.scriptInvalid ? "--script-invalid" : "";
-  //   const witnessOverride = options.witnessOverride
-  //     ? `--witness-override ${options.witnessOverride}`
-  //     : "";
-  //   if (!this.protocolParametersPath) this.queryProtocolParameters();
-  //   this.runCommand(`${this.cliPath} transaction build \
-  //               ${txInString} \
-  //               ${txOutString} \
-  //               ${txInCollateralString} \
-  //               ${certs} \
-  //               ${withdrawals} \
-  //               ${mintString} \
-  //               ${auxScript} \
-  //               ${metadata} \
-  //               ${scriptInvalid} \
-  //               ${witnessOverride} \
-  //               --invalid-hereafter ${
-  //                 options.invalidAfter
-  //                   ? options.invalidAfter
-  //                   : this.queryTip().slot + 10000
-  //               } \
-  //               --invalid-before ${
-  //                 options.invalidBefore ? options.invalidBefore : 0
-  //               } \
-  //               --out-file ${this.dir}/tmp/tx_${UID}.raw \
-  //               ${changeAddressString} \
-  //               --${this.network} \
-  //               --protocol-params-file ${this.protocolParametersPath} \
-  //               ${this.era}`);
-
-  //   return `${this.dir}/tmp/tx_${UID}.raw`;
-  // }
 }
