@@ -11,7 +11,7 @@ import {
 } from "./utxo.js";
 
 import { Network } from "./command/network.js";
-import { PaymentAddressBuildOptions } from "./address.js";
+import { PaymentAddressBuildOptions } from "./address-build-options.js";
 import { Era } from "./era.js";
 import { TransactionBuildOptions } from "./transaction-build.js";
 import { TransactionBuildRawOptions } from "./transaction/buid-raw-options.js";
@@ -30,6 +30,7 @@ import { ProtocolParamsFile } from "./command/shared/protocol-params-file.js";
 import { SigningKeyFile } from "./command/transaction/sign/signing-key-file.js";
 import { TxIdTx } from "./command/transaction/tx-id.js";
 import { Address } from "./command/address.js";
+import { PaymentComponent } from "./command/address/build.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -392,21 +393,22 @@ export class CardanoCli {
   }
 
   paymentAddressBuild(account: string, options: PaymentAddressBuildOptions) {
+    //higher order function
     const paymentAddressFileName =
       this.createPaymentAddressFileNameForAccount(account);
     this.ensurePathExists(this.createWalletPathForAccount(account));
 
-    let stakingAddressString: string = "";
-    if (options.stakingVerification) {
-      stakingAddressString = options.stakingVerification.asParameter();
-    }
+    this.address()
+      .build((builder) => {
+        builder.withPaymentComponent(options.paymentComponent);
+        if (options.stakingComponent) {
+          builder.withStakingComponent(options.stakingComponent);
+        }
+        builder.withOutFile(new OutFile(paymentAddressFileName));
+        return builder;
+      })
+      .runCommand();
 
-    this.runCommand(`${this.cliPath} address build \
-                    ${options.paymentVerification.asParameter()} \
-                    ${stakingAddressString} \
-                    --out-file ${paymentAddressFileName} \
-                    ${this.network.asParameter()}
-                `);
     return paymentAddressFileName;
   }
 
