@@ -48,17 +48,16 @@ const createTransactionBuildRawOptionsForChangeAndFee: (
   changeInLovelace: number,
   fee: number
 ) => TransactionBuildRawOptions = (changeInLovelace, fee) => {
-  return new TransactionBuildRawOptions(
-    paymentAddressAsInput(jacoWallet.paymentAddr),
-    [
+  return new TransactionBuildRawOptions()
+    .withTxIns(paymentAddressAsInput(jacoWallet.paymentAddr))
+    .withTxOuts([
       new TxOutParameter(new TxOut(jacoWallet.paymentAddr, changeInLovelace)),
       new TxOutParameter(
         new TxOut(scriptAddress, sendLovelaceToScript),
         TxOutDatum.inlineValue(startGameDatum.toScriptDataJson())
       ),
-    ],
-    new Fee(fee)
-  );
+    ])
+    .withFee(new Fee(fee));
 };
 
 //draft transaction
