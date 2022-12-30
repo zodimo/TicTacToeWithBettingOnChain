@@ -1,6 +1,6 @@
 import os from "os";
 import path from "path";
-import { Era } from "./cardano-cli/era.js";
+import { Era } from "./cardano-cli/command/era.js";
 import { Network } from "./cardano-cli/command/network.js";
 import { NodeMode } from "./cardano-cli/command/node-mode.js";
 
