@@ -581,9 +581,9 @@ export class CardanoCli {
         if (options.hasInvalidHereafter()) {
           builder.withInvalidHereafter(options.getInvalidHereafter());
         }
-        if (options.hasProtocolParamsFile()) {
-          builder.withProtocolParamsFile(options.getProtocolParamsFile());
-        }
+        builder.withProtocolParamsFile(
+          new ProtocolParamsFile(this.protocolParametersFile)
+        );
         builder.withOutputAs(OutputAs.outFile(outFile));
 
         return builder;
