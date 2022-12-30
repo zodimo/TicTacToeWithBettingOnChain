@@ -1,5 +1,5 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { StartGameData } from "../emurgo-datum.js";
+import { PlutusScriptDataJsonSchema, StartGameData } from "../emurgo-datum.js";
 import { getScriptAddress } from "../smart-contract.js";
 import {
   TxIn,
@@ -54,7 +54,11 @@ const createTransactionBuildRawOptionsForChangeAndFee: (
       new TxOutParameter(new TxOut(jacoWallet.paymentAddr, changeInLovelace)),
       new TxOutParameter(
         new TxOut(scriptAddress, sendLovelaceToScript),
-        TxOutDatum.inlineValue(startGameDatum.toScriptDataJson())
+        TxOutDatum.inlineValue(
+          startGameDatum.toScriptDataJson(
+            PlutusScriptDataJsonSchema.ScriptDataJsonDetailedSchema
+          )
+        )
       ),
     ])
     .withFee(new Fee(fee));
