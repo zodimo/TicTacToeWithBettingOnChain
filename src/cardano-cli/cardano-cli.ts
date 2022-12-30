@@ -475,7 +475,7 @@ export class CardanoCli {
     while (true) {
       if (!this.getUtxoStackForAddress(paymentAddress).hasUtxo(utxoId)) {
         if (this.debug) {
-          console.log(".");
+          console.log(`Waiting for TX: ${utxoId} [${sleepCounter}s]`);
         }
         this.sleep(1);
         sleepCounter++;
