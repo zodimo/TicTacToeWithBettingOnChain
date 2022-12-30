@@ -4,15 +4,17 @@ import { fileURLToPath } from "url";
 import { PaymentAddressBuildOptions } from "./cardano-cli/address-build-options.js";
 import { PaymentComponent } from "./cardano-cli/command/address/build.js";
 
-export const getScriptFile = () => {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+export const getScriptFile = () => {
   // get script address
   return __dirname + "/../testnet/ticTacToe.plutus";
+  // return __dirname + "/../testnet/untyped.plutus";
 };
 
 export const getScriptAddress = () => {
+  // const scriptWalletName = "untyped";
   const scriptWalletName = "ticTacToeScript";
   cardanoCli.paymentAddressBuild(
     scriptWalletName,
@@ -21,4 +23,6 @@ export const getScriptAddress = () => {
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
 
-// console.log(getScriptAddress());
+export const getUnitPlutusDataFile = () => {
+  return __dirname + "/../testnet/unit.json";
+};
