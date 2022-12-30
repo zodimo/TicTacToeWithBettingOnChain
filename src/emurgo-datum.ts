@@ -81,14 +81,21 @@ export class Move {
     return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson() {
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(
-      PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema
-    );
+  toScriptDataJson(schema: number) {
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
   }
 }
 
-class PlutusScriptDataJsonSchema {
+export class UnitData {
+  get data(): a.ConstrPlutusData {
+    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
+  }
+  toScriptDataJson(schema: number) {
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
+  }
+}
+
+export class PlutusScriptDataJsonSchema {
   // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
   static get ScriptDataJsonNoSchema() {
     return 0;
@@ -128,10 +135,8 @@ export class StartGameData {
     return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson() {
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(
-      PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema
-    );
+  toScriptDataJson(schema: number) {
+    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
   }
 }
 
