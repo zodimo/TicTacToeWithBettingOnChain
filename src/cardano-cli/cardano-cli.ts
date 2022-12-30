@@ -13,7 +13,7 @@ import {
 import { Network } from "./command/network.js";
 import { PaymentAddressBuildOptions } from "./address-build-options.js";
 import { Era } from "./command/era.js";
-import { TransactionBuildOptions } from "./transaction-build.js";
+import { TransactionBuildOptions } from "./transaction-build-options.js";
 import { TransactionBuildRawOptions } from "./transaction/buid-raw-options.js";
 import { TransactionCalculateMinFeeOptions } from "./transaction/calculate-min-fee-options.js";
 import { TransactionSignOptions } from "./transaction/sign-options.js";
@@ -33,6 +33,7 @@ import { Address } from "./command/address.js";
 import { PaymentComponent } from "./command/address/build.js";
 import { StakeAddress } from "./command/stake-address.js";
 import { StakeComponent } from "./command/stake-address/stake-component.js";
+import { OutputAs } from "./command/transaction/build/output-as.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -531,5 +532,63 @@ export class CardanoCli {
         throw new Error(`Timeout exceeded, waiting for utxo.`);
       }
     }
+  }
+
+  transactionBuild(options: TransactionBuildOptions): string {
+    let UID = Math.random().toString(36).slice(2, 9);
+    const outFile = createTempFilename(`tx_${UID}.raw`);
+    this.transaction()
+      .build((builder) => {
+        if (options.hasEra()) {
+          builder.withEra(options.getEra());
+        }
+        if (options.hasNodeMode()) {
+          builder.withNodeMode(options.getNodeMode());
+        }
+        if (options.hasNetwork()) {
+          builder.withNetwork(options.getNetwork());
+        }
+        if (options.hasAssertion()) {
+          builder.withAssertion(options.getAssertion());
+        }
+        if (options.hasTxIns()) {
+          builder.withTxIns(options.getTxIns());
+        }
+        if (options.hasReadOnlyTxInReference()) {
+          builder.withReadOnlyTxInReference(options.getReadOnlyTxInReference());
+        }
+        if (options.hasRequiredSigners()) {
+          builder.withRequiredSigners(options.getRequiredSigners());
+        }
+        if (options.hasTxInCollateral()) {
+          builder.withTxInCollateral(options.getTxInCollateral());
+        }
+        if (options.hasTxOutReturnCollateral()) {
+          builder.withTxOutReturnCollateral(options.getTxOutReturnCollateral());
+        }
+        if (options.hasTxTotalCollateral()) {
+          builder.withTxTotalCollateral(options.getTxTotalCollateral());
+        }
+        if (options.hasTxOuts()) {
+          builder.withTxOuts(options.getTxOuts());
+        }
+        if (options.hasChangeAddress()) {
+          builder.withChangeAddress(options.getChangeAddress());
+        }
+        if (options.hasInvalidBefore()) {
+          builder.withInvalidBefore(options.getInvalidBefore());
+        }
+        if (options.hasInvalidHereafter()) {
+          builder.withInvalidHereafter(options.getInvalidHereafter());
+        }
+        if (options.hasProtocolParamsFile()) {
+          builder.withProtocolParamsFile(options.getProtocolParamsFile());
+        }
+        builder.withOutputAs(OutputAs.outFile(outFile));
+
+        return builder;
+      })
+      .runCommand();
+    return outFile;
   }
 }

@@ -3,11 +3,12 @@ import { Command } from "../command.js";
 import { config } from "../../../cardano-cli-config.js";
 import { NodeMode } from "../node-mode.js";
 import { Network } from "../network.js";
-import { Assertion } from "./build/assertion.js";
+import { Assertion } from "./shared/assertion.js";
 import { TxInParameter } from "./build/tx-in.js";
 import { RequiredSigner } from "./build/required-signer.js";
 import { TxOutParameter } from "./build/tx-out.js";
 import { ProtocolParamsFile } from "../shared/protocol-params-file.js";
+import { OutputAs } from "./build/output-as.js";
 
 export class Build extends Command {
   // --*-era
@@ -25,7 +26,7 @@ export class Build extends Command {
   // [--read-only-tx-in-reference TX-IN]
   private readOnlyTxInReference?: string;
   //[--required-signer FILE | --required-signer-hash HASH]
-  private requiredSigner?: RequiredSigner;
+  private requiredSigners?: RequiredSigner[];
   //[--tx-in-collateral TX-IN]
   private txInCollateral?: string;
   //[--tx-out-return-collateral ADDRESS VALUE]
@@ -57,11 +58,12 @@ export class Build extends Command {
   //[--update-proposal-file FILE]
   private updateProposalFile?: string;
   // (--out-file FILE | --calculate-plutus-script-cost FILE)
-  private outputAs?: string;
+  private outputAs?: OutputAs;
 
   constructor(private commandPrefix: string) {
     super();
     this.era = config.getEra();
+    this.network = config.getNetwork();
     this.txIns = [];
     this.txOuts = [];
   }
@@ -86,6 +88,11 @@ export class Build extends Command {
     return this;
   }
 
+  withTxIns(txIns: TxInParameter[]): Build {
+    this.txIns = txIns;
+    return this;
+  }
+
   withTxIn(txIn: TxInParameter): Build {
     this.txIns.push(txIn);
     return this;
@@ -96,8 +103,15 @@ export class Build extends Command {
     return this;
   }
 
+  withRequiredSigners(requiredSigners: RequiredSigner[]): Build {
+    this.requiredSigners = requiredSigners;
+    return this;
+  }
   withRequiredSigner(requiredSigner: RequiredSigner): Build {
-    this.requiredSigner = requiredSigner;
+    if (!this.requiredSigners) {
+      this.requiredSigners = [];
+    }
+    this.requiredSigners.push(requiredSigner);
     return this;
   }
 
@@ -116,14 +130,21 @@ export class Build extends Command {
     return this;
   }
 
-  withTxOuts(txOut: TxOutParameter): Build {
+  withTxOuts(txOuts: TxOutParameter[]): Build {
+    this.txOuts = txOuts;
+    return this;
+  }
+
+  withTxOut(txOut: TxOutParameter): Build {
     this.txOuts.push(txOut);
     return this;
   }
+
   withChangeAddress(changeAddress: string): Build {
     this.changeAddress = changeAddress;
     return this;
   }
+
   withInvalidBefore(invalidBefore: number): Build {
     this.invalidBefore = invalidBefore;
     return this;
@@ -139,63 +160,76 @@ export class Build extends Command {
     return this;
   }
 
+  withOutputAs(outputAs: OutputAs): Build {
+    this.outputAs = outputAs;
+    return this;
+  }
+
   getCommand(): string {
-    let ouput: string[] = [this.commandPrefix, "build"];
+    let output: string[] = [this.commandPrefix, "build"];
     if (this.era) {
-      ouput.push(this.era.asParameter());
+      output.push(this.era.asParameter());
     }
     if (this.nodeMode) {
-      ouput.push(this.nodeMode.asParameter());
+      output.push(this.nodeMode.asParameter());
     }
     if (this.network) {
-      ouput.push(this.network.asParameter());
+      output.push(this.network.asParameter());
     }
     if (this.assertion) {
-      ouput.push(this.assertion.asParameter());
+      output.push(this.assertion.asParameter());
     }
 
     //tx-in
-    this.txIns.map((txInParameter) => ouput.push(txInParameter.asParameter()));
+    this.txIns.forEach((txInParameter) =>
+      output.push(txInParameter.asParameter())
+    );
 
     if (this.readOnlyTxInReference) {
-      ouput.push(`--read-only-tx-in-reference ${this.readOnlyTxInReference}`);
+      output.push(`--read-only-tx-in-reference ${this.readOnlyTxInReference}`);
     }
 
-    if (this.requiredSigner) {
-      ouput.push(this.requiredSigner.asParameter());
+    if (this.requiredSigners) {
+      this.requiredSigners.forEach((requiredSigner) =>
+        output.push(requiredSigner.asParameter())
+      );
     }
 
     if (this.txInCollateral) {
-      ouput.push(`--tx-in-collateral ${this.txInCollateral}`);
+      output.push(`--tx-in-collateral ${this.txInCollateral}`);
     }
 
     if (this.txOutReturnCollateral) {
-      ouput.push(`--tx-out-return-collateral ${this.txOutReturnCollateral}`);
+      output.push(`--tx-out-return-collateral ${this.txOutReturnCollateral}`);
     }
     if (this.txTotalCollateral) {
-      ouput.push(`--tx-total-collateral ${this.txTotalCollateral}`);
+      output.push(`--tx-total-collateral ${this.txTotalCollateral}`);
     }
 
     //tx-out
-    this.txOuts.map((txOutParameter) =>
-      ouput.push(txOutParameter.asParameter())
+    this.txOuts.forEach((txOutParameter) =>
+      output.push(txOutParameter.asParameter())
     );
 
     if (this.changeAddress) {
-      ouput.push(`--change-address ${this.changeAddress}`);
+      output.push(`--change-address ${this.changeAddress}`);
     }
 
     if (this.invalidBefore) {
-      ouput.push(`--invalid-before ${this.invalidBefore}`);
+      output.push(`--invalid-before ${this.invalidBefore}`);
     }
     if (this.invalidHereafter) {
-      ouput.push(`--invalid-hereaftere ${this.invalidHereafter}`);
+      output.push(`--invalid-hereaftere ${this.invalidHereafter}`);
     }
 
     if (this.protocolParamsFile) {
-      ouput.push(this.protocolParamsFile.asParameter());
+      output.push(this.protocolParamsFile.asParameter());
     }
 
-    return ouput.join(" ");
+    if (this.outputAs) {
+      output.push(this.outputAs.asParameter());
+    }
+
+    return output.join(" ");
   }
 }
