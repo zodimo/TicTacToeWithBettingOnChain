@@ -6,27 +6,22 @@ export class TransactionBuildRawOptions {
   private txIns: TxInParameter[];
   private txOuts: TxOutParameter[];
   private fee: Fee;
-  constructor(txIns?: TxInParameter[], txOuts?: TxOutParameter[], fee?: Fee) {
-    if (txIns) {
-      this.txIns = txIns;
-    } else {
-      this.txIns = [];
-    }
-
-    if (txOuts) {
-      this.txOuts = txOuts;
-    } else {
-      this.txOuts = [];
-    }
-    if (fee) {
-      this.fee = fee;
-    } else {
-      this.fee = new Fee(0);
-    }
+  constructor() {
+    this.txIns = [];
+    this.txOuts = [];
+    this.fee = new Fee(0);
   }
 
+  withTxIns(txIns: TxInParameter[]): TransactionBuildRawOptions {
+    this.txIns = txIns;
+    return this;
+  }
   withTxIn(txIn: TxInParameter): TransactionBuildRawOptions {
     this.txIns.push(txIn);
+    return this;
+  }
+  withTxOuts(txOuts: TxOutParameter[]): TransactionBuildRawOptions {
+    this.txOuts = txOuts;
     return this;
   }
   withTxOut(txOut: TxOutParameter): TransactionBuildRawOptions {
