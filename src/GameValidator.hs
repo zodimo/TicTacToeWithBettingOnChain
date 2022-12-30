@@ -72,12 +72,19 @@ PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
 
 
-data GameState = Initiated | Running | Xwins | Owins | Atie | Cancelled deriving (Show)
+-- gameState is derived not saved in the datum.
+-- rootPkh :: BuiltinByteString
+-- rootPkh=""
+
+-- isRootPKH :: PaymentPubKeyHash -> rootPkh -> Bool
+-- isRootPKH ppkh rpkh = rpkh == (getPubKeyHash $ unPaymentPubKeyHash ppkh)
+
+
+data GameState = Initiated | Running | Xwins | Owins | Atie | Cancelled | Invalid deriving (Show)
 data GameStateDatum = StartedDatum
     { oWallet     :: PaymentPubKeyHash
     , deadline    :: POSIXTime
     , bet         :: Integer
-    , gameState   :: GameState
     } | JoinedDatum 
     { oWallet     :: PaymentPubKeyHash
     , xWallet     :: PaymentPubKeyHash
@@ -105,6 +112,8 @@ PlutusTx.unstableMakeIsData ''GameState
  -- Datum -- Redeemer -- ScriptContext
 -- mkValidator :: (GameStateDatum) -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 mkValidator :: () -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
+-- | gamestate == invalid and pkh == rootPkh = True
+-- gamestate is derived from datum on utxo and provided datums and redeemer.
 mkValidator _ _ _ = True
 
 
