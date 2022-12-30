@@ -187,7 +187,11 @@ export class TxInAlternativeFactory {
 }
 
 export class TxInDatum {
-  private constructor(private paramKey: string, private paramValue: string) {}
+  private constructor(
+    private paramKey: string,
+    private paramValue: string,
+    private isQuoted = false
+  ) {}
 
   static cborFile(value: string): TxInDatum {
     // --tx-in-datum-cbor-file CBOR FILE
@@ -204,7 +208,7 @@ export class TxInDatum {
   static value(value: string): TxInDatum {
     // --tx-in-datum-value JSON VALUE
     const param = "tx-in-datum-value";
-    return new TxInDatum(param, value);
+    return new TxInDatum(param, value, true);
   }
 
   static inlineDatumInPresent(): TxInDatum {
@@ -214,31 +218,43 @@ export class TxInDatum {
   }
 
   asParameter(): string {
-    return `--${this.paramKey} ${this.paramValue}`;
+    if (this.isQuoted) {
+      return `--${this.paramKey} '${this.paramValue}'`;
+    } else {
+      return `--${this.paramKey} ${this.paramValue}`;
+    }
   }
 }
 
 export class TxInRedeemer {
-  private constructor(private paramKey: string, private paramValue: string) {}
+  private constructor(
+    private paramKey: string,
+    private paramValue: string,
+    private isQuoted = false
+  ) {}
 
   static cborFile(value: string): TxInRedeemer {
     //--tx-in-redeemer-cbor-file CBOR FILE
-    const param = "tx-out-datum-hash";
+    const param = "tx-in-redeemer-cbor-file";
     return new TxInRedeemer(param, value);
   }
   static file(value: string): TxInRedeemer {
     //--tx-in-redeemer-file JSON FILE
-    const param = "tx-out-datum-hash";
+    const param = "tx-in-redeemer-file";
     return new TxInRedeemer(param, value);
   }
   static value(value: string): TxInRedeemer {
     //--tx-in-redeemer-value JSON VALUE
-    const param = "tx-out-datum-hash";
-    return new TxInRedeemer(param, value);
+    const param = "tx-in-redeemer-value";
+    return new TxInRedeemer(param, value, true);
   }
 
   asParameter(): string {
-    return `--${this.paramKey} ${this.paramValue}`;
+    if (this.isQuoted) {
+      return `--${this.paramKey} '${this.paramValue}'`;
+    } else {
+      return `--${this.paramKey} ${this.paramValue}`;
+    }
   }
 }
 
