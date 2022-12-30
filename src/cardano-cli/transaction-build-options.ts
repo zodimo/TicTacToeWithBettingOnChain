@@ -230,19 +230,4 @@ export class TransactionBuildOptions {
       throw new Error("InvalidHereafter is not defined!");
     return this.invalidHereafter;
   }
-
-  withProtocolParamsFile(
-    protocolParamsFile: ProtocolParamsFile
-  ): TransactionBuildOptions {
-    this.protocolParamsFile = protocolParamsFile;
-    return this;
-  }
-  hasProtocolParamsFile(): boolean {
-    return !!this.protocolParamsFile;
-  }
-  getProtocolParamsFile(): ProtocolParamsFile {
-    if (!this.protocolParamsFile)
-      throw new Error("ProtocolParamsFile is not defined!");
-    return this.protocolParamsFile;
-  }
 }
