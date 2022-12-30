@@ -1,13 +1,37 @@
+import {
+  TxOut,
+  TxOutParameter,
+} from "../cardano-cli/command/transaction/build/tx-out.js";
+import { RequiredSigner } from "../cardano-cli/command/transaction/build/required-signer.js";
+import {
+  TxIn,
+  TxInAdditional,
+  TxInAlternativeFactory,
+  TxInDatum,
+  TxInParameter,
+  TxInRedeemer,
+  TxInScriptAdditional,
+} from "../cardano-cli/command/transaction/build/tx-in.js";
+import { TransactionBuildOptions } from "../cardano-cli/transaction-build-options.js";
 import { UtxoId } from "../cardano-cli/utxo-id.js";
 import { UtxoStack } from "../cardano-cli/utxo.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { getScriptAddress } from "../smart-contract.js";
+import { getScriptAddress, getScriptFile } from "../smart-contract.js";
+import { PlutusScriptDataJsonSchema, UnitData } from "../emurgo-datum.js";
 
 const scriptAddress = getScriptAddress();
-const utxoStackAtScriptAddress = cardanoCli.getUtxoStackForAddress(scriptAddress);
+const utxoStackAtScriptAddress =
+  cardanoCli.getUtxoStackForAddress(scriptAddress);
+const scriptFile = getScriptFile();
 
 //destination wallet
 const jacoWallet = cardanoCli.wallet("jaco");
+const jacoWalletUtxoStack = cardanoCli.getUtxoStackForAddress(
+  jacoWallet.paymentAddr
+);
+const plutusSchema = PlutusScriptDataJsonSchema.ScriptDataJsonDetailedSchema;
+const scriptDatumValue = new UnitData().toScriptDataJson(plutusSchema);
+const scriptRedeemerValue = new UnitData().toScriptDataJson(plutusSchema);
 
 const scriptUtxoStack = new UtxoStack(
   cardanoCli.getUtxoListForAddress(scriptAddress).filter((utxo) => {
@@ -16,46 +40,49 @@ const scriptUtxoStack = new UtxoStack(
   })
 );
 
-
-
-// //filter input utxos to only the ones containing inline datum..
-// const scriptUtxoStackAsInput: (utxoStack: UtxoStack) => TxInParameter[] = (
-//   utxoStack
-// ) => {
-//   return utxoStack.utxos.map((utxo) => {
-
-//     return new TxInParameter(
-//       utxo.id.toString(), // tx-in
-//       new TxInSpending(
-//         true, // isSpendingPlutusScriptV2
-
-//       )
-//       );
-//   });
-// };
+//filter input utxos to only the ones containing inline datum..
+const scriptUtxoStackAsInput: (utxoStack: UtxoStack) => TxInParameter[] = (
+  utxoStack
+) => {
+  return [
+    utxoStack.utxos.map((utxo) => {
+      return new TxInParameter(
+        new TxIn(utxo.id), // tx-in
+        new TxInAdditional(
+          TxInAlternativeFactory.txInScriptFile(scriptFile),
+          new TxInScriptAdditional()
+            .withTxInDatum(TxInDatum.value(scriptDatumValue))
+            .withTxInRedeemer(TxInRedeemer.value(scriptRedeemerValue))
+        )
+      );
+    })[0],
+  ];
+};
 
 //calculate output without fees to start with
 const outputValueInLovelace = scriptUtxoStack.getLoveLaceValue();
 
 console.log(scriptUtxoStack);
 
+const transactionBuildOptions = new TransactionBuildOptions();
+transactionBuildOptions.withTxIns(scriptUtxoStackAsInput(scriptUtxoStack));
+transactionBuildOptions.withRequiredSigner(
+  RequiredSigner.file(jacoWallet.keys.payment.signingKeyFile)
+);
+transactionBuildOptions.withTxInCollateral(
+  jacoWalletUtxoStack.utxos[0].id.toString()
+);
+transactionBuildOptions.withTxOut(
+  new TxOutParameter(new TxOut(jacoWallet.paymentAddr, outputValueInLovelace))
+);
+transactionBuildOptions.withChangeAddress(jacoWallet.paymentAddr);
 
+//draft transaction
+const draftTransactionBodyFile = cardanoCli.transactionBuild(
+  transactionBuildOptions
+);
 
-// const transactionBuildRawOptions = new TransactionBuildRawOptions(
-//     //filtered script utxos
-//     utxoStackAsInput(scriptUtxoStack),
-//   [
-//     new TxOutParameter(
-//       new TxOut(jacoWallet.paymentAddr, outputValueInLovelace)
-//     ),
-//   ]
-// );
-
-// //draft transaction
-// const draftTransactionBodyFile = cardanoCli.transactionBuildRaw(
-//   transactionBuildRawOptions
-// );
-
+console.log(draftTransactionBodyFile);
 // // calculate transaction fees
 // const fee = cardanoCli.transactionCalculateMinFee(
 //   new TransactionCalculateMinFeeOptions(
@@ -80,7 +107,6 @@ console.log(scriptUtxoStack);
 //     new SigningKeyFiles([jacoWallet.keys.payment.signingKeyFile])
 //   )
 // );
-
 
 // //broadcast transaction
 // let txHash = cardanoCli.transactionSubmit(
