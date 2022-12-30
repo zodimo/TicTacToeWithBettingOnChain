@@ -2,13 +2,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import { AddressKeys, ScriptWallet, Wallet, WalletKeys } from "./wallet.js";
 import { UtxoId } from "./utxo-id.js";
-import {
-  StackValue,
-  Utxo,
-  UtxoNativeAsset,
-  UtxoStack,
-  UtxoValue,
-} from "./utxo.js";
+import { StackValue, Utxo, UtxoNativeAsset, UtxoStack, UtxoValue } from "./utxo.js";
 
 import { Network } from "./command/network.js";
 import { PaymentAddressBuildOptions } from "./address-build-options.js";
@@ -79,9 +73,7 @@ export class CardanoCli {
     options.cliPath && (this.cliPath = options.cliPath);
     options.nodeMode && (this.nodeMode = options.nodeMode);
 
-    this.protocolParametersFile = this.createTempFilename(
-      "protocolParams.json"
-    );
+    this.protocolParametersFile = this.createTempFilename("protocolParams.json");
 
     ensureTempDirectoryExists();
 
@@ -117,8 +109,7 @@ export class CardanoCli {
   }
 
   scriptWallet(account: string): ScriptWallet {
-    const paymentAddrFile =
-      this.createPaymentAddressFileNameForAccount(account);
+    const paymentAddrFile = this.createPaymentAddressFileNameForAccount(account);
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
     }
@@ -128,48 +119,34 @@ export class CardanoCli {
   }
 
   wallet(account: string): Wallet {
-    const paymentAddrFile =
-      this.createPaymentAddressFileNameForAccount(account);
-    const paymentAddrSigningKeyFile =
-      this.createPaymentSKeyFileNameForAccount(account);
-    const paymentAddrVerificationKeyFile =
-      this.createPaymentVKeyFileNameForAccount(account);
+    const paymentAddrFile = this.createPaymentAddressFileNameForAccount(account);
+    const paymentAddrSigningKeyFile = this.createPaymentSKeyFileNameForAccount(account);
+    const paymentAddrVerificationKeyFile = this.createPaymentVKeyFileNameForAccount(account);
 
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist.`);
     }
 
     if (!fs.existsSync(paymentAddrVerificationKeyFile)) {
-      throw new Error(
-        `Payment Verification Key for ${account} does not exist.`
-      );
+      throw new Error(`Payment Verification Key for ${account} does not exist.`);
     }
 
     if (!fs.existsSync(paymentAddrSigningKeyFile)) {
       throw new Error(`Payment Signing Key for ${account} does not exist.`);
     }
 
-    const paymentkeys = new AddressKeys(
-      paymentAddrVerificationKeyFile,
-      paymentAddrSigningKeyFile
-    );
+    const paymentkeys = new AddressKeys(paymentAddrVerificationKeyFile, paymentAddrSigningKeyFile);
 
     const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
 
-    const stakingAddrFile =
-      this.createStakingAddressFileNameForAccount(account);
+    const stakingAddrFile = this.createStakingAddressFileNameForAccount(account);
 
     let stakingAddr: string | null = null;
     if (fs.existsSync(stakingAddrFile)) {
       stakingAddr = fs.readFileSync(stakingAddrFile).toString();
     }
 
-    return new Wallet(
-      account,
-      paymentAddr,
-      stakingAddr,
-      new WalletKeys(paymentkeys)
-    );
+    return new Wallet(account, paymentAddr, stakingAddr, new WalletKeys(paymentkeys));
   }
 
   getUtxoStackForAddress(paymentAddr: string): UtxoStack {
@@ -209,18 +186,13 @@ export class CardanoCli {
     Object.keys(utxosRaw).forEach((utxo: string) => {
       // keeping the types on utxoBody loose to make it work.
       const utxoBody = utxosRaw[utxo];
-      const {
-        lovelace,
-        ...utxoRawAssets
-      }: { lovelace: number; utxoRawAssets: UtxoRawAssetInterface } =
+      const { lovelace, ...utxoRawAssets }: { lovelace: number; utxoRawAssets: UtxoRawAssetInterface } =
         utxoBody["value"];
       let utxoNativeAssets: UtxoNativeAsset[] = [];
 
       Object.entries(utxoRawAssets).forEach(([policyId, utxoRawAsset]) => {
         Object.entries(utxoRawAsset).forEach(([assetName, quantity]) => {
-          utxoNativeAssets.push(
-            new UtxoNativeAsset(policyId, assetName, quantity)
-          );
+          utxoNativeAssets.push(new UtxoNativeAsset(policyId, assetName, quantity));
         });
       });
 
@@ -259,9 +231,7 @@ export class CardanoCli {
         });
         builder.withFee(options.getFee());
         builder.withOutFile(new OutFile(outFileName));
-        builder.withProtocolParamsFile(
-          new ProtocolParamsFile(this.protocolParametersFile)
-        );
+        builder.withProtocolParamsFile(new ProtocolParamsFile(this.protocolParametersFile));
         return builder;
       })
       .runCommand();
@@ -286,9 +256,7 @@ export class CardanoCli {
     return lovelace / 1000000;
   }
 
-  transactionCalculateMinFee(
-    options: TransactionCalculateMinFeeOptions
-  ): number {
+  transactionCalculateMinFee(options: TransactionCalculateMinFeeOptions): number {
     //higher order function
     return parseInt(
       this.transaction()
@@ -298,9 +266,7 @@ export class CardanoCli {
             .withTxInCount(options.txInCount)
             .withTxOutCount(options.txOutCount)
             .withWitnessCount(options.witnessCount)
-            .withProtocolParamsFile(
-              new ProtocolParamsFile(this.protocolParametersFile)
-            );
+            .withProtocolParamsFile(new ProtocolParamsFile(this.protocolParametersFile));
 
           if (options.byronWitnessCount) {
             builder.withByronWitnessCount(options.byronWitnessCount);
@@ -404,8 +370,7 @@ export class CardanoCli {
 
   paymentAddressBuild(account: string, options: PaymentAddressBuildOptions) {
     //higher order function
-    const paymentAddressFileName =
-      this.createPaymentAddressFileNameForAccount(account);
+    const paymentAddressFileName = this.createPaymentAddressFileNameForAccount(account);
     this.ensurePathExists(this.createWalletPathForAccount(account));
 
     this.address()
@@ -460,16 +425,12 @@ export class CardanoCli {
   stakeAddressBuild(account: string): string {
     //higher order function
     this.ensurePathExists(this.createWalletPathForAccount(account));
-    const stakingVKeyFileName =
-      this.createStakingVKeyFileNameForAccount(account);
-    const stakingAddrFileName =
-      this.createStakingVKeyFileNameForAccount(account);
+    const stakingVKeyFileName = this.createStakingVKeyFileNameForAccount(account);
+    const stakingAddrFileName = this.createStakingVKeyFileNameForAccount(account);
     this.stakeAddress()
       .build((builder) => {
         return builder
-          .withStakeComponent(
-            StakeComponent.verificationKeyFile(stakingVKeyFileName)
-          )
+          .withStakeComponent(StakeComponent.verificationKeyFile(stakingVKeyFileName))
           .withOutFile(new OutFile(stakingAddrFileName));
       })
       .runCommand();
@@ -501,9 +462,7 @@ export class CardanoCli {
     }
 
     if (!fs.existsSync(this.protocolParametersFile)) {
-      throw new Error(
-        `Protocol Parameters File do not exist: ${this.protocolParametersFile}`
-      );
+      throw new Error(`Protocol Parameters File do not exist: ${this.protocolParametersFile}`);
     }
   }
 
@@ -511,16 +470,12 @@ export class CardanoCli {
     return this.runCommand(`sleep ${seconds}`);
   }
 
-  waitForUtxoAtPaymentAddress(
-    paymentAddress: string,
-    utxoId: UtxoId,
-    timoutInSeconds: number = 60
-  ): void {
+  waitForUtxoAtPaymentAddress(paymentAddress: string, utxoId: UtxoId, timoutInSeconds: number = 60): void {
     let sleepCounter = 0;
     while (true) {
       if (!this.getUtxoStackForAddress(paymentAddress).hasUtxo(utxoId)) {
         if (this.debug) {
-          console.log(`Waiting for TX: ${utxoId} [${sleepCounter}s]`);
+          console.log(".");
         }
         this.sleep(1);
         sleepCounter++;
@@ -581,9 +536,7 @@ export class CardanoCli {
         if (options.hasInvalidHereafter()) {
           builder.withInvalidHereafter(options.getInvalidHereafter());
         }
-        builder.withProtocolParamsFile(
-          new ProtocolParamsFile(this.protocolParametersFile)
-        );
+        builder.withProtocolParamsFile(new ProtocolParamsFile(this.protocolParametersFile));
         builder.withOutputAs(OutputAs.outFile(outFile));
 
         return builder;
