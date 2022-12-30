@@ -45,19 +45,18 @@ const createTxBuildOptions: (
   changeInLovelace: number,
   fee: number
 ) => TransactionBuildRawOptions = (changeInLovelace, fee) => {
-  return new TransactionBuildRawOptions(
-    cardanoCli
-      .getUtxoListForAddress(jaco.paymentAddr)
-      .map((utxo) => new TxInParameter(new TxIn(utxo.id))),
-    [
-      new TxOutParameter(
-        new TxOut(jaco.paymentAddr, changeInLovelace)
-      ), //convension --- change
+  return new TransactionBuildRawOptions()
+    .withTxIns(
+      cardanoCli
+        .getUtxoListForAddress(jaco.paymentAddr)
+        .map((utxo) => new TxInParameter(new TxIn(utxo.id)))
+    )
+    .withTxOuts([
+      new TxOutParameter(new TxOut(jaco.paymentAddr, changeInLovelace)), //convension --- change
       new TxOutParameter(new TxOut(player1.paymentAddr, lovaceToTransfer)),
       new TxOutParameter(new TxOut(player2.paymentAddr, lovaceToTransfer)),
-    ],
-    new Fee(fee)
-  );
+    ])
+    .withFee(new Fee(fee));
 };
 
 let txDraftBodyFile = cardanoCli.transactionBuildRaw(
