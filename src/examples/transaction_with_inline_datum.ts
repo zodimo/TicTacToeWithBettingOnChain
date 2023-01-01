@@ -1,5 +1,5 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { PlutusScriptDataJsonSchema, StartGameData } from "./emurgo-datum.js";
+import { StartGameData } from "./emurgo-datum.js";
 import { getScriptAddress } from "../smart-contract.js";
 import { TxIn, TxInParameter } from "../cardano-cli/command/transaction/build-raw/tx-in.js";
 import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw-options.js";
@@ -14,6 +14,7 @@ import { UtxoId } from "../cardano-cli/utxo-id.js";
 import { createTempFilename } from "../cardano-cli/temp-dir.js";
 
 import fs from "fs";
+import { ScriptDataJsonSchema } from "../cardano-cli/script-data.js";
 
 let UID = Math.random().toString(36).slice(2, 9);
 const tempDatumFile = createTempFilename(`datum_${UID}.json`);
@@ -21,7 +22,7 @@ const startGameDatum = new StartGameData("special", 50);
 
 fs.writeFileSync(
   tempDatumFile,
-  startGameDatum.toScriptDataJson(PlutusScriptDataJsonSchema.ScriptDataJsonDetailedSchema)
+  startGameDatum.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)
 );
 
 // funded wallet

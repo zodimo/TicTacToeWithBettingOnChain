@@ -1,5 +1,5 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { PlutusScriptDataJsonSchema, StartGameData } from "./emurgo-datum.js";
+import { StartGameData } from "./emurgo-datum.js";
 import { getScriptAddress } from "../smart-contract.js";
 import { TxIn, TxInParameter } from "../cardano-cli/command/transaction/build-raw/tx-in.js";
 import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw-options.js";

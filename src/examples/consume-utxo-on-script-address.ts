@@ -14,11 +14,12 @@ import { UtxoId } from "../cardano-cli/utxo-id.js";
 import { UtxoStack } from "../cardano-cli/utxo.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { getScriptAddress, getScriptFile, getUnitPlutusDataFile } from "../smart-contract.js";
-import { PlutusScriptDataJsonSchema, UnitData } from "./emurgo-datum.js";
+import { UnitData } from "./emurgo-datum.js";
 import { TransactionSignOptions } from "../cardano-cli/transaction/sign-options.js";
 import { TxToSign } from "../cardano-cli/command/transaction/sign/tx-to-sign.js";
 import { SigningKeyFile } from "../cardano-cli/command/transaction/sign/signing-key-file.js";
 import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit-options.js";
+import { ScriptDataJsonSchema } from "../cardano-cli/script-data.js";
 
 const scriptAddress = getScriptAddress();
 const utxoStackAtScriptAddress = cardanoCli.getUtxoStackForAddress(scriptAddress);
@@ -29,7 +30,7 @@ const jacoWallet = cardanoCli.wallet("jaco");
 const jacoWalletUtxoStack = cardanoCli.getUtxoStackForAddress(jacoWallet.paymentAddr);
 
 //datum and redeemer
-const plutusSchema = PlutusScriptDataJsonSchema.ScriptDataJsonDetailedSchema;
+const plutusSchema = ScriptDataJsonSchema.ScriptDataJsonDetailedSchema;
 const scriptDatumValue = new UnitData().toScriptDataJson(plutusSchema);
 const scriptDatumFile = getUnitPlutusDataFile();
 const scriptRedeemerValue = new UnitData().toScriptDataJson(plutusSchema);
