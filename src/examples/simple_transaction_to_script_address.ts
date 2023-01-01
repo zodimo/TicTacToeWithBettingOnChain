@@ -1,5 +1,5 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { PlutusScriptDataJsonSchema, StartGameData } from "../emurgo-datum.js";
+import { PlutusScriptDataJsonSchema, StartGameData } from "./emurgo-datum.js";
 import { getScriptAddress } from "../smart-contract.js";
 import { TxIn, TxInParameter } from "../cardano-cli/command/transaction/build-raw/tx-in.js";
 import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw-options.js";
@@ -12,7 +12,7 @@ import { SigningKeyFile } from "../cardano-cli/command/transaction/sign/signing-
 import { TransactionSubmitOptions } from "../cardano-cli/transaction/submit-options.js";
 import { UtxoId } from "../cardano-cli/utxo-id.js";
 
-const startGameDatum = new StartGameData(50);
+const startGameDatum = new StartGameData("special", 50);
 
 // funded wallet
 const jacoWallet = cardanoCli.wallet("jaco");

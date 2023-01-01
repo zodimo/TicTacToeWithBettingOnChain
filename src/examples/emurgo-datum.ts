@@ -1,4 +1,6 @@
 import * as a from "@emurgo/cardano-serialization-lib-nodejs";
+import assert from "assert";
+import * as ScriptData from "../cardano-cli/script-data.js";
 
 // @see https://docs.cardano.org/cardano-components/cardano-serialization-lib/
 // @see https://github.com/Emurgo/cardano-serialization-lib/tree/master/doc/getting-started
@@ -104,10 +106,19 @@ export class StartGameData {
     public readonly deadlineInMins: Number = 30
   ) {}
 
-  static fromPlutusDataJson(plutusDataJson: string): StartGameData {
-    console.log(plutusDataJson);
-    console.log(JSON.parse(plutusDataJson));
-    return new StartGameData("nothing", 0, 0);
+  static fromScriptData(data: ScriptData.Data): StartGameData {
+    assert.equal(data instanceof ScriptData.DataConstr, true);
+    let validData: ScriptData.DataConstr = data as ScriptData.DataConstr;
+    assert.equal(validData.getIndex(), 0, "Extects constructor index of 0");
+    assert.equal(validData.getFields().length, 3, "Extects 3 fields");
+    assert.equal(validData.getFields()[0] instanceof ScriptData.DataBytes, true);
+    const gameNameData: ScriptData.DataBytes = validData.getFields()[0] as ScriptData.DataBytes;
+    assert.equal(validData.getFields()[1] instanceof ScriptData.DataNumber, true);
+    const gameBetInAda: ScriptData.DataNumber = validData.getFields()[1] as ScriptData.DataNumber;
+    assert.equal(validData.getFields()[2] instanceof ScriptData.DataNumber, true);
+    const deadlineInMins: ScriptData.DataNumber = validData.getFields()[2] as ScriptData.DataNumber;
+
+    return new StartGameData(gameNameData.toString(), gameBetInAda.getValue(), deadlineInMins.getValue());
   }
 
   get data(): a.ConstrPlutusData {
@@ -120,7 +131,7 @@ export class StartGameData {
     return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson(schema: number):string {
+  toScriptDataJson(schema: number): string {
     // constuctor can only be details
     return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
   }
