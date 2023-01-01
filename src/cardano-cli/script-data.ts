@@ -16,11 +16,22 @@ import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
  *          ]}
  */
 
+export class ScriptDataJsonSchema {
+  // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
+  static get ScriptDataJsonNoSchema() {
+    return 0;
+  }
+  static get ScriptDataJsonDetailedSchema() {
+    return 1;
+  }
+}
+
 abstract class ScriptData {
-  abstract asPlutusData(): csl.PlutusData;
-  toScriptDataJson(schema: number) {
+  abstract toPlutusData(): csl.PlutusData;
+
+  toScriptDataJson(schema: number): string {
     // constuctor can only be details
-    return this.asPlutusData().to_json(schema);
+    return this.toPlutusData().to_json(schema);
   }
 }
 
@@ -50,29 +61,31 @@ export class DataBytes extends ScriptData {
     return Buffer.from(this.bytes).toString("hex");
   }
 
-  asPlutusData(): csl.PlutusData {
+  toPlutusData(): csl.PlutusData {
     throw csl.PlutusData.new_bytes(this.bytes);
   }
 }
 
 export class DataNumber extends ScriptData {
-  constructor(private value: number) {
+  constructor(private int: number) {
     super();
   }
+
   static fromNumber(value: number): DataNumber {
     return new DataNumber(value);
   }
-  asPlutusData(): csl.PlutusData {
-    return csl.PlutusData.new_integer(csl.BigInt.from_str(this.value.toString()));
+
+  toPlutusData(): csl.PlutusData {
+    return csl.PlutusData.new_integer(csl.BigInt.from_str(this.int.toString()));
   }
 
   getValue(): number {
-    return this.value;
+    return this.int;
   }
 }
 
 export class DataArray extends ScriptData {
-  constructor(private values: Array<Data>) {
+  constructor(private list: Array<Data>) {
     super();
   }
 
@@ -80,20 +93,21 @@ export class DataArray extends ScriptData {
     return new DataArray(value);
   }
 
-  asPlutusData(): csl.PlutusData {
+  toPlutusData(): csl.PlutusData {
     const plutusList = csl.PlutusList.new();
-    this.values.forEach((data) => {
-      plutusList.add(data.asPlutusData());
+    this.list.forEach((data) => {
+      plutusList.add(data.toPlutusData());
     });
     return csl.PlutusData.new_list(plutusList);
   }
+
   getArray(): Array<Data> {
-    return this.values;
+    return this.list;
   }
 }
 
 class DataMap extends ScriptData {
-  constructor(private value: Map<Data, Data>) {
+  constructor(private map: Map<Data, Data>) {
     super();
   }
 
@@ -101,15 +115,16 @@ class DataMap extends ScriptData {
     return new DataMap(value);
   }
 
-  asPlutusData(): csl.PlutusData {
+  toPlutusData(): csl.PlutusData {
     const plutusMap = csl.PlutusMap.new();
-    for (const [key, value] of this.value.entries()) {
-      plutusMap.insert(key.asPlutusData(), value.asPlutusData());
+    for (const [key, value] of this.map.entries()) {
+      plutusMap.insert(key.toPlutusData(), value.toPlutusData());
     }
     return csl.PlutusData.new_map(plutusMap);
   }
+
   getMap(): Map<Data, Data> {
-    return this.value;
+    return this.map;
   }
 }
 
@@ -126,10 +141,10 @@ export class DataConstr extends ScriptData {
     return new DataConstr(0, []);
   }
 
-  asPlutusData(): csl.PlutusData {
+  toPlutusData(): csl.PlutusData {
     const plutusList = csl.PlutusList.new();
     this.fields.forEach((data) => {
-      plutusList.add(data.asPlutusData());
+      plutusList.add(data.toPlutusData());
     });
 
     const constrPlutusData = csl.ConstrPlutusData.new(csl.BigNum.from_str(this.index.toString()), plutusList);
