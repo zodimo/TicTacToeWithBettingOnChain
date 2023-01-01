@@ -122,6 +122,10 @@ export class DataConstr extends ScriptData {
     return new DataConstr(index, fields);
   }
 
+  static unit(): DataConstr {
+    return new DataConstr(0, []);
+  }
+
   asPlutusData(): csl.PlutusData {
     const plutusList = csl.PlutusList.new();
     this.fields.forEach((data) => {
