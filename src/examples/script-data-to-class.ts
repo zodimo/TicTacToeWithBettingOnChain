@@ -5,6 +5,5 @@ const scriptDataJson: string = `{"constructor":0,"fields":[{"bytes":"73706563696
 const data = fromJson(scriptDataJson) as DataConstr;
 
 const startGameData=StartGameData.fromScriptData(data);
-
-
 console.log(startGameData);
+console.log(startGameData.toScriptDataJson(1));
