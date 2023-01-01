@@ -1,4 +1,3 @@
-import * as a from "@emurgo/cardano-serialization-lib-nodejs";
 import assert from "assert";
 import * as ScriptData from "../cardano-cli/script-data.js";
 
@@ -27,17 +26,17 @@ export enum Column {
 export class Move {
   constructor(private readonly row: Row, private readonly column: Column) {}
 
-  get data(): a.ConstrPlutusData {
+  toScriptData(): ScriptData.Data {
     let rowData = null;
     switch (this.row) {
       case Row.Row_A:
-        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
+        rowData = ScriptData.DataConstr.from(0, []);
         break;
       case Row.Row_B:
-        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("1"), a.PlutusList.new());
+        rowData = ScriptData.DataConstr.from(1, []);
         break;
       case Row.Row_C:
-        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("2"), a.PlutusList.new());
+        rowData = ScriptData.DataConstr.from(2, []);
         break;
       default:
         throw new Error(`Non-existent row in switch: ${this.row}`);
@@ -46,64 +45,41 @@ export class Move {
     let columnData = null;
     switch (this.column) {
       case Column.Col_1:
-        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
+        columnData = ScriptData.DataConstr.from(0, []);
         break;
       case Column.Col_2:
-        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("1"), a.PlutusList.new());
+        columnData = ScriptData.DataConstr.from(1, []);
         break;
       case Column.Col_3:
-        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("2"), a.PlutusList.new());
+        columnData = ScriptData.DataConstr.from(2, []);
         break;
 
       default:
         throw new Error(`Non-existent row in switch: ${this.column}`);
     }
 
-    const plutusList = a.PlutusList.new();
-    plutusList.add(a.PlutusData.new_constr_plutus_data(rowData));
-    plutusList.add(a.PlutusData.new_constr_plutus_data(columnData));
-    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
+    return ScriptData.DataConstr.from(0, [rowData, columnData]);
   }
 
   toScriptDataJson(schema: number) {
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
+    return this.toScriptData().toScriptDataJson(schema);
   }
 }
 
 export class UnitData {
-  get data(): a.ConstrPlutusData {
-    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
+  toScriptData(): ScriptData.Data {
+    return ScriptData.DataConstr.unit();
   }
   toScriptDataJson(schema: number) {
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
+    return this.toScriptData().toScriptDataJson(schema);
   }
 }
-
-export class PlutusScriptDataJsonSchema {
-  // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
-  static get ScriptDataJsonNoSchema() {
-    return 0;
-  }
-  static get ScriptDataJsonDetailedSchema() {
-    return 1;
-  }
-}
-
-// const move = new Move(Row.Row_A,Column.Col_3);
-// console.log(a.PlutusData.from_hex(move.data.to_hex()).to_json(PlutusScriptDataJsonSchema.ScriptDataJsonNoSchema));
-
-//  data StartGameData = StartGameData
-//  { gameBetInAda:: Integer
-//  , deadlineInMins:: Integer
-//  }
-
-// PlutusTx.makeIsDataIndexed ''StartGameData [('StartGameData,0)]
 
 export class StartGameData {
   constructor(
     public readonly gameName: string,
-    public readonly gameBetInAda: Number,
-    public readonly deadlineInMins: Number = 30
+    public readonly gameBetInAda: number,
+    public readonly deadlineInMins: number = 30
   ) {}
 
   static fromScriptData(data: ScriptData.Data): StartGameData {
@@ -121,22 +97,16 @@ export class StartGameData {
     return new StartGameData(gameNameData.toString(), gameBetInAda.getValue(), deadlineInMins.getValue());
   }
 
-  get data(): a.ConstrPlutusData {
-    const plutusList = a.PlutusList.new();
-    // string variable
-    plutusList.add(a.PlutusData.new_bytes(Buffer.from(this.gameName, "utf-8")));
-    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.gameBetInAda.toString())));
-    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.deadlineInMins.toString())));
-
-    return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
+  toScriptData(): ScriptData.Data {
+    return ScriptData.DataConstr.from(0, [
+      ScriptData.DataBytes.fromString(this.gameName),
+      ScriptData.DataNumber.fromNumber(this.gameBetInAda),
+      ScriptData.DataNumber.fromNumber(this.deadlineInMins),
+    ]);
   }
 
   toScriptDataJson(schema: number): string {
     // constuctor can only be details
-    return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
+    return this.toScriptData().toScriptDataJson(schema);
   }
 }
-
-// const startGameData:StartGameData=new StartGameData(10,15);
-// console.log(startGameData.data.to_hex());
-// console.log(startGameData.toScriptDataJson());
