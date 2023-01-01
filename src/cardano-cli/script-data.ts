@@ -62,6 +62,10 @@ export class DataNumber extends ScriptData {
   asPlutusData(): csl.PlutusData {
     return csl.PlutusData.new_integer(csl.BigInt.from_str(this.value.toString()));
   }
+
+  getValue(): number {
+    return this.value;
+  }
 }
 
 export class DataArray extends ScriptData {
@@ -74,6 +78,9 @@ export class DataArray extends ScriptData {
       plutusList.add(data.asPlutusData());
     });
     return csl.PlutusData.new_list(plutusList);
+  }
+  getArray(): Array<Data> {
+    return this.values;
   }
 }
 
@@ -88,10 +95,13 @@ class DataMap extends ScriptData {
     }
     return csl.PlutusData.new_map(plutusMap);
   }
+  getMap(): Map<Data, Data> {
+    return this.value;
+  }
 }
 
 export class DataConstr extends ScriptData {
-  constructor(public index: number, public fields: Data[]) {
+  constructor(private index: number, private fields: Data[]) {
     super();
   }
   asPlutusData(): csl.PlutusData {
@@ -102,6 +112,14 @@ export class DataConstr extends ScriptData {
 
     const constrPlutusData = csl.ConstrPlutusData.new(csl.BigNum.from_str(this.index.toString()), plutusList);
     return csl.PlutusData.new_constr_plutus_data(constrPlutusData);
+  }
+
+  getIndex(): number {
+    return this.index;
+  }
+
+  getFields(): Data[] {
+    return this.fields;
   }
 }
 
