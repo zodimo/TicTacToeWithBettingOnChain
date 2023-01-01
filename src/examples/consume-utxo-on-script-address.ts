@@ -14,7 +14,7 @@ import { UtxoId } from "../cardano-cli/utxo-id.js";
 import { UtxoStack } from "../cardano-cli/utxo.js";
 import { cardanoCli } from "../previewCardanoCliJs.js";
 import { getScriptAddress, getScriptFile, getUnitPlutusDataFile } from "../smart-contract.js";
-import { PlutusScriptDataJsonSchema, UnitData } from "../emurgo-datum.js";
+import { PlutusScriptDataJsonSchema, UnitData } from "./emurgo-datum.js";
 import { TransactionSignOptions } from "../cardano-cli/transaction/sign-options.js";
 import { TxToSign } from "../cardano-cli/command/transaction/sign/tx-to-sign.js";
 import { SigningKeyFile } from "../cardano-cli/command/transaction/sign/signing-key-file.js";
