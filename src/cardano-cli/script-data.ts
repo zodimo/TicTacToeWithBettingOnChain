@@ -62,7 +62,7 @@ export class DataBytes extends ScriptData {
   }
 
   toPlutusData(): csl.PlutusData {
-    throw csl.PlutusData.new_bytes(this.bytes);
+    return csl.PlutusData.new_bytes(this.bytes);
   }
 }
 
@@ -204,7 +204,7 @@ export const fromJson: (json: string) => Data = (json) => {
     throw new Error(`Could not create Data from this object: ${JSON.stringify(jsonObject)}`);
   };
 
-  const scriptDataJson: Object = JSON.parse(json);
+  const scriptDataJson = JSON.parse(json);
 
   return fromJsonObject(scriptDataJson);
 };
