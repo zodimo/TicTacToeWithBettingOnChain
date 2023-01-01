@@ -29,22 +29,13 @@ export class Move {
     let rowData = null;
     switch (this.row) {
       case Row.Row_A:
-        rowData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("0"),
-          a.PlutusList.new()
-        );
+        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
         break;
       case Row.Row_B:
-        rowData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("1"),
-          a.PlutusList.new()
-        );
+        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("1"), a.PlutusList.new());
         break;
       case Row.Row_C:
-        rowData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("2"),
-          a.PlutusList.new()
-        );
+        rowData = a.ConstrPlutusData.new(a.BigNum.from_str("2"), a.PlutusList.new());
         break;
       default:
         throw new Error(`Non-existent row in switch: ${this.row}`);
@@ -53,22 +44,13 @@ export class Move {
     let columnData = null;
     switch (this.column) {
       case Column.Col_1:
-        columnData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("0"),
-          a.PlutusList.new()
-        );
+        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("0"), a.PlutusList.new());
         break;
       case Column.Col_2:
-        columnData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("1"),
-          a.PlutusList.new()
-        );
+        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("1"), a.PlutusList.new());
         break;
       case Column.Col_3:
-        columnData = a.ConstrPlutusData.new(
-          a.BigNum.from_str("2"),
-          a.PlutusList.new()
-        );
+        columnData = a.ConstrPlutusData.new(a.BigNum.from_str("2"), a.PlutusList.new());
         break;
 
       default:
@@ -117,25 +99,29 @@ export class PlutusScriptDataJsonSchema {
 
 export class StartGameData {
   constructor(
+    public readonly gameName: string,
     public readonly gameBetInAda: Number,
     public readonly deadlineInMins: Number = 30
   ) {}
 
+  static fromPlutusDataJson(plutusDataJson: string): StartGameData {
+    console.log(plutusDataJson);
+    console.log(JSON.parse(plutusDataJson));
+    return new StartGameData("nothing", 0, 0);
+  }
+
   get data(): a.ConstrPlutusData {
     const plutusList = a.PlutusList.new();
-    plutusList.add(
-      a.PlutusData.new_integer(a.BigInt.from_str(this.gameBetInAda.toString()))
-    );
-    plutusList.add(
-      a.PlutusData.new_integer(
-        a.BigInt.from_str(this.deadlineInMins.toString())
-      )
-    );
+    // string variable
+    plutusList.add(a.PlutusData.new_bytes(Buffer.from(this.gameName, "utf-8")));
+    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.gameBetInAda.toString())));
+    plutusList.add(a.PlutusData.new_integer(a.BigInt.from_str(this.deadlineInMins.toString())));
 
     return a.ConstrPlutusData.new(a.BigNum.from_str("0"), plutusList);
   }
 
-  toScriptDataJson(schema: number) {
+  toScriptDataJson(schema: number):string {
+    // constuctor can only be details
     return a.PlutusData.from_hex(this.data.to_hex()).to_json(schema);
   }
 }
