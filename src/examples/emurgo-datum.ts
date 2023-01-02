@@ -13,6 +13,7 @@ import * as ScriptData from "../cardano-cli/script-data.js";
 // PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 // PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
 
+
 export enum Row {
   Row_A,
   Row_B,
@@ -60,18 +61,11 @@ export class Move {
 
     return ScriptData.DataConstr.from(0, [rowData, columnData]);
   }
-
-  toScriptDataJson(schema: number) {
-    return this.toScriptData().toScriptDataJson(schema);
-  }
 }
 
 export class UnitData {
   toScriptData(): ScriptData.Data {
     return ScriptData.DataConstr.unit();
-  }
-  toScriptDataJson(schema: number) {
-    return this.toScriptData().toScriptDataJson(schema);
   }
 }
 
@@ -103,10 +97,5 @@ export class StartGameData {
       ScriptData.DataNumber.fromNumber(this.gameBetInAda),
       ScriptData.DataNumber.fromNumber(this.deadlineInMins),
     ]);
-  }
-
-  toScriptDataJson(schema: number): string {
-    // constuctor can only be details
-    return this.toScriptData().toScriptDataJson(schema);
   }
 }
