@@ -3,10 +3,6 @@ import { Game, JoinGameParams, StartGameParams, MakeMoveParams } from "../app/ga
 import { runCommand } from "../cardano-cli/run-command.js";
 import { ScriptDataJsonSchema } from "../cardano-cli/script-data.js";
 
-/**
- * The changes from the wins is from TX7
- */
-
 // TX 1
 const playerOneAddress = "Player1Address";
 const startGameParams = new StartGameParams(playerOneAddress, 50, 1);
