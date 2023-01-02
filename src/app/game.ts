@@ -7,12 +7,24 @@
  */
 
 import assert from "assert";
+import {
+  Column,
+  GameInitiated,
+  GameInProgress,
+  GameIsTied,
+  GameIsWon,
+  GameStarted,
+  GameState,
+  Move,
+  Moves,
+  Row,
+} from "./game-data.js";
 
 export class StartGameParams {
   constructor(
-    public readonly PlayerOneAddress: string,
+    public readonly playerOneAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: Number
+    public readonly gameMaxIntervalInMins: number
   ) {}
 }
 
@@ -24,127 +36,12 @@ export class MakeMoveParams {
   constructor(public readonly playerAddress: string, public readonly move: Move) {}
 }
 
-export enum Row {
-  ROW_A = "A",
-  ROW_B = "B",
-  ROW_C = "C",
-}
-
-export enum Column {
-  Col_1 = 1,
-  Col_2 = 2,
-  Col_3 = 3,
-}
-
-export class Move {
-  constructor(public readonly row: Row, public readonly column: Column) {}
-
-  equals(move: Move): boolean {
-    return this.column == move.column && this.row == move.row;
-  }
-}
-
-class Moves {
-  private constructor(public readonly movesMade: MoveMade[]) {}
-  static initialise(): Moves {
-    return new Moves([]);
-  }
-
-  makeMove(playerAddress: string, move: Move): Moves {
-    if (this.hasMoveBeenMade(move)) {
-      throw new Error("Illegal move: position is occupied.");
-    }
-    const moves = this.movesMade;
-    moves.push(new MoveMade(playerAddress, move));
-    return new Moves(moves);
-  }
-
-  hasMoveBeenMade(move: Move): boolean {
-    return !!this.movesMade.find((moveMade) => {
-      return moveMade.move.equals(move);
-    });
-  }
-
-  getMoveMadeAtPosition(row: Row, column: Column): MoveMade | null {
-    const move = new Move(row, column);
-    const moveMade = this.movesMade.find((moveMade) => {
-      if (moveMade.move.equals(move)) {
-        return moveMade;
-      }
-    });
-    return moveMade ?? null;
-  }
-}
-
-class MoveMade {
-  constructor(public readonly playerAddress: string, public readonly move: Move) {}
-}
-
-class GameInitiated {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: Number
-  ) {}
-}
-
-class GameStarted {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: Number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
-    public readonly playerAddressToMakeMove: string
-  ) {}
-}
-
-class GameInProgress {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: Number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
-    public readonly playerAddressToMakeMove: string,
-    public readonly moves: Moves
-  ) {}
-}
-
-class GameIsWon {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: Number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
-    public readonly winningPlayerAddress: string,
-    public readonly moves: Moves
-  ) {}
-}
-
-class GameIsTied {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
-    public readonly betInAda: number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
-    public readonly moves: Moves
-  ) {}
-}
-
-export type GameState = GameInitiated | GameStarted | GameInProgress | GameIsWon | GameIsTied;
-
 export class Game {
   private constructor(public readonly gameState: GameState) {}
 
   static startGame(params: StartGameParams): Game {
     //create game state from params
-    const gameState = new GameInitiated(params.PlayerOneAddress, params.betInAda, params.gameMaxIntervalInMins);
+    const gameState = new GameInitiated(params.playerOneAddress, params.betInAda, params.gameMaxIntervalInMins);
     return new Game(gameState);
   }
 
@@ -205,8 +102,12 @@ export class Game {
   }
 
   makeMove(params: MakeMoveParams): Game {
-    assert.equal(this.gameState instanceof GameInProgress, true, `Game must be InProgress!, current state: ${this.gameState.constructor.name}`);
-    
+    assert.equal(
+      this.gameState instanceof GameInProgress,
+      true,
+      `Game must be InProgress!, current state: ${this.gameState.constructor.name}`
+    );
+
     const currentGamestate: GameInProgress = this.gameState as GameInProgress;
     assert.equal(currentGamestate.playerAddressToMakeMove == params.playerAddress, true, "Wrong player playing now!");
 
@@ -261,19 +162,28 @@ export class Game {
 
   claimWin() {
     //the wallet call this methods will pay the fees.
-    assert.equal(this.gameState instanceof GameIsWon, true,`Game must be Won!, current state: ${this.gameState.constructor.name}`);
+    assert.equal(
+      this.gameState instanceof GameIsWon,
+      true,
+      `Game must be Won!, current state: ${this.gameState.constructor.name}`
+    );
     const currentGamestate: GameIsWon = this.gameState as GameIsWon;
-    
-    //last player won..
-    console.log(`Congratulation player : ${currentGamestate.winningPlayerAddress} you won ${currentGamestate.betInAda} Ada`);
+
+    console.log(
+      `Congratulation player : ${currentGamestate.winningPlayerAddress} you won ${currentGamestate.betInAda} Ada + Original ${currentGamestate.betInAda} Ada`
+    );
   }
   claimTie() {
     //the wallet call this methods will pay the fees.
-    assert.equal(this.gameState instanceof GameIsTied, true,`Game must be Tied!, current state: ${this.gameState.constructor.name}`);
+    assert.equal(
+      this.gameState instanceof GameIsTied,
+      true,
+      `Game must be Tied!, current state: ${this.gameState.constructor.name}`
+    );
     const currentGamestate: GameIsTied = this.gameState as GameIsTied;
-    //last player won..
-    console.log(`player : ${currentGamestate.playerXAddress} ${currentGamestate.betInAda} returned`);
-    console.log(`player : ${currentGamestate.playerOAddress} ${currentGamestate.betInAda} returned`);
+    console.log("Game is Tied, return player bets.");
+    console.log(`player : ${currentGamestate.playerXAddress} ${currentGamestate.betInAda} Ada returned`);
+    console.log(`player : ${currentGamestate.playerOAddress} ${currentGamestate.betInAda} Ada returned`);
   }
   claimTimeOut() {
     throw new Error("Not yet implemented!!");
