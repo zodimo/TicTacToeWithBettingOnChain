@@ -24,7 +24,7 @@ export class StartGameParams {
   constructor(
     public readonly playerOneAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: number
+    public readonly gameMaxIntervalInSeconds: number
   ) {}
 }
 
@@ -46,7 +46,7 @@ export class Game {
     const gameState = new GameInitiated(
       params.playerOneAddress,
       params.betInAda,
-      params.gameMaxIntervalInMins,
+      params.gameMaxIntervalInSeconds,
       postixTimeNow
     );
     return new Game(gameState);
@@ -68,7 +68,7 @@ export class Game {
       currentGamestate.playerOneAddress,
       params.playerTwoAddress,
       currentGamestate.betInAda,
-      currentGamestate.gameMaxIntervalInMins,
+      currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
       playerAddressToMakeMove
     );
@@ -99,7 +99,7 @@ export class Game {
       currentGamestate.playerOneAddress,
       currentGamestate.playerTwoAddress,
       currentGamestate.betInAda,
-      currentGamestate.gameMaxIntervalInMins,
+      currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
       playerAddressToMakeMove,
       move.makeMove(params.playerAddress, params.move)
@@ -136,7 +136,7 @@ export class Game {
         currentGamestate.playerOneAddress,
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
-        currentGamestate.gameMaxIntervalInMins,
+        currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
         params.playerAddress, //winning player address
         newMoves
@@ -154,7 +154,7 @@ export class Game {
         currentGamestate.playerOneAddress,
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
-        currentGamestate.gameMaxIntervalInMins,
+        currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
         playerAddressToMakeMove,
         newMoves
@@ -162,6 +162,74 @@ export class Game {
     }
 
     return new Game(gameState);
+  }
+
+  cancelInitiatedGame() {
+    assert.equal(
+      this.gameState instanceof GameInitiated,
+      true,
+      `GameState is expected to be GameInitiated, got ${this.gameState.constructor.name}`
+    );
+    const knownGameState: GameInitiated = this.gameState as GameInitiated;
+    const postixTimeNow = +Date.now().toString();
+    assert.equal(
+      knownGameState.expiresAtPosixTime() < postixTimeNow,
+      true,
+      "Expected Game to have reached its timeout!"
+    );
+
+    console.log(`Nobody want to play! ,You can have your ${knownGameState.betInAda} Ada back!`);
+  }
+
+  cancelStartedGame() {
+    assert.equal(
+      this.gameState instanceof GameStarted,
+      true,
+      `GameState is expected to be GameStarted, got ${this.gameState.constructor.name}`
+    );
+    const knownGameState: GameStarted = this.gameState as GameStarted;
+    const postixTimeNow = +Date.now().toString();
+    assert.equal(
+      knownGameState.expiresAtPosixTime() < postixTimeNow,
+      true,
+      "Expected Game to have reached its timeout!"
+    );
+
+    let winnerByTimout = knownGameState.playerOneAddress;
+    if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
+      winnerByTimout = knownGameState.playerTwoAddress;
+    }
+
+    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to repond.`);
+    console.log(`Winner by TIMEOUT is ${winnerByTimout}!`);
+    console.log(
+      `Congratulation player : ${winnerByTimout} you won ${knownGameState.betInAda} Ada + Original ${knownGameState.betInAda} Ada`
+    );
+  }
+  cancelInProgressGame() {
+    assert.equal(
+      this.gameState instanceof GameInProgress,
+      true,
+      `GameState is expected to be GameInProgress, got ${this.gameState.constructor.name}`
+    );
+    const knownGameState: GameInProgress = this.gameState as GameInProgress;
+    const postixTimeNow = +Date.now().toString();
+    assert.equal(
+      knownGameState.expiresAtPosixTime() < postixTimeNow,
+      true,
+      "Expected Game to have reached its timeout!"
+    );
+
+    let winnerByTimout = knownGameState.playerOneAddress;
+    if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
+      winnerByTimout = knownGameState.playerTwoAddress;
+    }
+
+    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to repond.`);
+    console.log(`Winner by TIMEOUT is ${winnerByTimout}!`);
+    console.log(
+      `Congratulation player : ${winnerByTimout} you won ${knownGameState.betInAda} Ada + Original ${knownGameState.betInAda} Ada`
+    );
   }
 
   claimWin() {
