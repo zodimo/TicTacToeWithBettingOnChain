@@ -52,19 +52,15 @@ export class Game {
   joinGame(params: JoinGameParams): Game {
     assert.equal(this.gameState instanceof GameInitiated, true);
     const currentGamestate: GameInitiated = this.gameState as GameInitiated;
-    //randomize which player is x and o
-    const playerXAddress = currentGamestate.playerOneAddress;
-    const playerOAddress = params.playerTwoAddress;
+    const playerTwoAddress=params.playerTwoAddress;
     //randomize which player to start;
-    const playerAddressToMakeMove = playerOAddress;
+    const playerAddressToMakeMove = playerTwoAddress;
 
     const gameState = new GameStarted(
       currentGamestate.playerOneAddress,
       params.playerTwoAddress,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInMins,
-      playerXAddress,
-      playerOAddress,
       playerAddressToMakeMove
     );
 
@@ -81,9 +77,9 @@ export class Game {
     assert.equal(currentGamestate.playerAddressToMakeMove == params.playerAddress, true, "Wrong player playing now!");
 
     // select other player to play next.
-    let playerAddressToMakeMove = currentGamestate.playerXAddress;
+    let playerAddressToMakeMove = currentGamestate.playerOneAddress;
     if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
-      playerAddressToMakeMove = currentGamestate.playerOAddress;
+      playerAddressToMakeMove = currentGamestate.playerTwoAddress;
     }
 
     const move = Moves.initialise();
@@ -93,8 +89,6 @@ export class Game {
       currentGamestate.playerTwoAddress,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInMins,
-      currentGamestate.playerXAddress,
-      currentGamestate.playerOAddress,
       playerAddressToMakeMove,
       move.makeMove(params.playerAddress, params.move)
     );
@@ -112,9 +106,9 @@ export class Game {
     assert.equal(currentGamestate.playerAddressToMakeMove == params.playerAddress, true, "Wrong player playing now!");
 
     // select other player to play next.
-    let playerAddressToMakeMove = currentGamestate.playerXAddress;
+    let playerAddressToMakeMove = currentGamestate.playerOneAddress;
     if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
-      playerAddressToMakeMove = currentGamestate.playerOAddress;
+      playerAddressToMakeMove = currentGamestate.playerTwoAddress;
     }
 
     this.assertGameIsPlayable(currentGamestate.moves);
@@ -130,8 +124,6 @@ export class Game {
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInMins,
-        currentGamestate.playerXAddress,
-        currentGamestate.playerOAddress,
         params.playerAddress, //winning player address
         newMoves
       );
@@ -140,8 +132,6 @@ export class Game {
         currentGamestate.playerOneAddress,
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
-        currentGamestate.playerXAddress,
-        currentGamestate.playerOAddress,
         newMoves
       );
     } else {
@@ -150,8 +140,6 @@ export class Game {
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInMins,
-        currentGamestate.playerXAddress,
-        currentGamestate.playerOAddress,
         playerAddressToMakeMove,
         newMoves
       );
@@ -182,8 +170,8 @@ export class Game {
     );
     const currentGamestate: GameIsTied = this.gameState as GameIsTied;
     console.log("Game is Tied, return player bets.");
-    console.log(`player : ${currentGamestate.playerXAddress} ${currentGamestate.betInAda} Ada returned`);
-    console.log(`player : ${currentGamestate.playerOAddress} ${currentGamestate.betInAda} Ada returned`);
+    console.log(`player : ${currentGamestate.playerOneAddress} ${currentGamestate.betInAda} Ada returned`);
+    console.log(`player : ${currentGamestate.playerTwoAddress} ${currentGamestate.betInAda} Ada returned`);
   }
   claimTimeOut() {
     throw new Error("Not yet implemented!!");

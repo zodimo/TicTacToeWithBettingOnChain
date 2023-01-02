@@ -133,8 +133,6 @@ export class GameStarted implements ToScriptDataSerialise {
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInMins: number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
     public readonly playerAddressToMakeMove: string
   ) {}
   toScriptData(): Data {
@@ -143,8 +141,6 @@ export class GameStarted implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInMins),
-      DataBytes.fromString(this.playerXAddress),
-      DataBytes.fromString(this.playerOAddress),
       DataBytes.fromString(this.playerAddressToMakeMove),
     ]);
   }
@@ -156,8 +152,6 @@ export class GameInProgress implements ToScriptDataSerialise {
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInMins: number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
     public readonly playerAddressToMakeMove: string,
     public readonly moves: Moves
   ) {}
@@ -168,8 +162,6 @@ export class GameInProgress implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInMins),
-      DataBytes.fromString(this.playerXAddress),
-      DataBytes.fromString(this.playerOAddress),
       DataBytes.fromString(this.playerAddressToMakeMove),
       this.moves.toScriptData(),
     ]);
@@ -182,8 +174,6 @@ export class GameIsWon implements ToScriptDataSerialise {
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInMins: number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
     public readonly winningPlayerAddress: string,
     public readonly moves: Moves
   ) {}
@@ -194,8 +184,6 @@ export class GameIsWon implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInMins),
-      DataBytes.fromString(this.playerXAddress),
-      DataBytes.fromString(this.playerOAddress),
       DataBytes.fromString(this.winningPlayerAddress),
       this.moves.toScriptData(),
     ]);
@@ -207,8 +195,6 @@ export class GameIsTied implements ToScriptDataSerialise {
     public readonly playerOneAddress: string,
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
-    public readonly playerXAddress: string,
-    public readonly playerOAddress: string,
     public readonly moves: Moves
   ) {}
 
@@ -217,8 +203,6 @@ export class GameIsTied implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerOneAddress),
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
-      DataBytes.fromString(this.playerXAddress),
-      DataBytes.fromString(this.playerOAddress),
       this.moves.toScriptData(),
     ]);
   }
@@ -363,7 +347,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   }
 
   createGameStarted(data: DataConstr): GameStarted {
-    assert.equal(data.getFields().length, 7, `GameStarted: Extects 7 fields got ${data.getFields().length}`);
+    assert.equal(data.getFields().length, 5, `GameStarted: Extects 5 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
     const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataBytes, true);
@@ -373,96 +357,18 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
     const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
     assert.equal(data.getFields()[4] instanceof DataBytes, true);
-    const playerXAddressData: DataBytes = data.getFields()[4] as DataBytes;
-    assert.equal(data.getFields()[5] instanceof DataBytes, true);
-    const playerOAddressData: DataBytes = data.getFields()[5] as DataBytes;
-    assert.equal(data.getFields()[6] instanceof DataBytes, true);
-    const playerAddressToMakeMoveData: DataBytes = data.getFields()[6] as DataBytes;
+    const playerAddressToMakeMoveData: DataBytes = data.getFields()[4] as DataBytes;
 
     return new GameStarted(
       playerOneAddressData.toString(),
       playerTwoAddressData.toString(),
       betInAdaData.getValue(),
       gameMaxIntervalInMinsData.getValue(),
-      playerXAddressData.toString(),
-      playerOAddressData.toString(),
       playerAddressToMakeMoveData.toString()
     );
   }
 
   createGameInProgress(data: DataConstr): GameInProgress {
-    assert.equal(data.getFields().length, 8, `GameInProgress: Extects 8 fields got ${data.getFields().length}`);
-    assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
-    assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
-    assert.equal(data.getFields()[2] instanceof DataNumber, true);
-    const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
-    assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
-    assert.equal(data.getFields()[4] instanceof DataBytes, true);
-    const playerXAddressData: DataBytes = data.getFields()[4] as DataBytes;
-    assert.equal(data.getFields()[5] instanceof DataBytes, true);
-    const playerOAddressData: DataBytes = data.getFields()[5] as DataBytes;
-    assert.equal(data.getFields()[6] instanceof DataBytes, true);
-    const playerAddressToMakeMoveData: DataBytes = data.getFields()[6] as DataBytes;
-
-    assert.equal(
-      data.getFields()[7] instanceof DataConstr,
-      true,
-      `Expected DataConstr, got ${data.getFields()[7].constructor.name}`
-    );
-    const movesData: DataConstr = data.getFields()[7] as DataConstr;
-
-    return new GameInProgress(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
-      betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
-      playerXAddressData.toString(),
-      playerOAddressData.toString(),
-      playerAddressToMakeMoveData.toString(),
-      new MovesFactory().fromScriptData(movesData)
-    );
-  }
-
-  createGameIsWon(data: DataConstr): GameState {
-    assert.equal(data.getFields().length, 8, `GameInProgress: Extects 8 fields got ${data.getFields().length}`);
-    assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
-    assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
-    assert.equal(data.getFields()[2] instanceof DataNumber, true);
-    const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
-    assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
-    assert.equal(data.getFields()[4] instanceof DataBytes, true);
-    const playerXAddressData: DataBytes = data.getFields()[4] as DataBytes;
-    assert.equal(data.getFields()[5] instanceof DataBytes, true);
-    const playerOAddressData: DataBytes = data.getFields()[5] as DataBytes;
-    assert.equal(data.getFields()[6] instanceof DataBytes, true);
-    const winningPlayerAddressData: DataBytes = data.getFields()[6] as DataBytes;
-
-    assert.equal(
-      data.getFields()[7] instanceof DataConstr,
-      true,
-      `Expected DataConstr, got ${data.getFields()[7].constructor.name}`
-    );
-    const movesData: DataConstr = data.getFields()[7] as DataConstr;
-
-    return new GameIsWon(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
-      betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
-      playerXAddressData.toString(),
-      playerOAddressData.toString(),
-      winningPlayerAddressData.toString(),
-      new MovesFactory().fromScriptData(movesData)
-    );
-  }
-
-  createGameIsTied(data: DataConstr): GameIsTied {
     assert.equal(data.getFields().length, 6, `GameInProgress: Extects 6 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
     const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
@@ -470,10 +376,10 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
-    assert.equal(data.getFields()[3] instanceof DataBytes, true);
-    const playerXAddressData: DataBytes = data.getFields()[3] as DataBytes;
+    assert.equal(data.getFields()[3] instanceof DataNumber, true);
+    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
     assert.equal(data.getFields()[4] instanceof DataBytes, true);
-    const playerOAddressData: DataBytes = data.getFields()[4] as DataBytes;
+    const playerAddressToMakeMoveData: DataBytes = data.getFields()[4] as DataBytes;
 
     assert.equal(
       data.getFields()[5] instanceof DataConstr,
@@ -482,12 +388,66 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     );
     const movesData: DataConstr = data.getFields()[5] as DataConstr;
 
+    return new GameInProgress(
+      playerOneAddressData.toString(),
+      playerTwoAddressData.toString(),
+      betInAdaData.getValue(),
+      gameMaxIntervalInMinsData.getValue(),
+      playerAddressToMakeMoveData.toString(),
+      new MovesFactory().fromScriptData(movesData)
+    );
+  }
+
+  createGameIsWon(data: DataConstr): GameState {
+    assert.equal(data.getFields().length, 6, `GameInProgress: Extects 6 fields got ${data.getFields().length}`);
+    assert.equal(data.getFields()[0] instanceof DataBytes, true);
+    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    assert.equal(data.getFields()[1] instanceof DataBytes, true);
+    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    assert.equal(data.getFields()[2] instanceof DataNumber, true);
+    const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
+    assert.equal(data.getFields()[3] instanceof DataNumber, true);
+    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
+    assert.equal(data.getFields()[4] instanceof DataBytes, true);
+    const winningPlayerAddressData: DataBytes = data.getFields()[4] as DataBytes;
+
+    assert.equal(
+      data.getFields()[5] instanceof DataConstr,
+      true,
+      `Expected DataConstr, got ${data.getFields()[5].constructor.name}`
+    );
+    const movesData: DataConstr = data.getFields()[5] as DataConstr;
+
+    return new GameIsWon(
+      playerOneAddressData.toString(),
+      playerTwoAddressData.toString(),
+      betInAdaData.getValue(),
+      gameMaxIntervalInMinsData.getValue(),
+      winningPlayerAddressData.toString(),
+      new MovesFactory().fromScriptData(movesData)
+    );
+  }
+
+  createGameIsTied(data: DataConstr): GameIsTied {
+    assert.equal(data.getFields().length, 4, `GameInProgress: Extects 4 fields got ${data.getFields().length}`);
+    assert.equal(data.getFields()[0] instanceof DataBytes, true);
+    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    assert.equal(data.getFields()[1] instanceof DataBytes, true);
+    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    assert.equal(data.getFields()[2] instanceof DataNumber, true);
+    const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
+
+    assert.equal(
+      data.getFields()[3] instanceof DataConstr,
+      true,
+      `Expected DataConstr, got ${data.getFields()[3].constructor.name}`
+    );
+    const movesData: DataConstr = data.getFields()[3] as DataConstr;
+
     return new GameIsTied(
       playerOneAddressData.toString(),
       playerTwoAddressData.toString(),
       betInAdaData.getValue(),
-      playerXAddressData.toString(),
-      playerOAddressData.toString(),
       new MovesFactory().fromScriptData(movesData)
     );
   }
