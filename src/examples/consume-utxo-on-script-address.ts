@@ -31,9 +31,9 @@ const jacoWalletUtxoStack = cardanoCli.getUtxoStackForAddress(jacoWallet.payment
 
 //datum and redeemer
 const plutusSchema = ScriptDataJsonSchema.ScriptDataJsonDetailedSchema;
-const scriptDatumValue = new UnitData().toScriptDataJson(plutusSchema);
+const scriptDatumValue = new UnitData().toScriptData().toScriptDataJson(plutusSchema);
 const scriptDatumFile = getUnitPlutusDataFile();
-const scriptRedeemerValue = new UnitData().toScriptDataJson(plutusSchema);
+const scriptRedeemerValue = new UnitData().toScriptData().toScriptDataJson(plutusSchema);
 const scriptRedeemerFile = getUnitPlutusDataFile();
 
 const scriptUtxoStack = new UtxoStack(

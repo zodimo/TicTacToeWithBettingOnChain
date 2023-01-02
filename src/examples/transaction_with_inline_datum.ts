@@ -22,7 +22,7 @@ const startGameDatum = new StartGameData("special", 50);
 
 fs.writeFileSync(
   tempDatumFile,
-  startGameDatum.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)
+  startGameDatum.toScriptData().toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)
 );
 
 // funded wallet

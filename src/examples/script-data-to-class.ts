@@ -6,4 +6,4 @@ const data = fromJson(scriptDataJson) as DataConstr;
 
 const startGameData=StartGameData.fromScriptData(data);
 console.log(startGameData);
-console.log(startGameData.toScriptDataJson(1));
+console.log(startGameData.toScriptData().toScriptDataJson(1));
