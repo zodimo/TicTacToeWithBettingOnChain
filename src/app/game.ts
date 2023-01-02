@@ -200,7 +200,7 @@ export class Game {
       winnerByTimout = knownGameState.playerTwoAddress;
     }
 
-    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to repond.`);
+    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to respond.`);
     console.log(`Winner by TIMEOUT is ${winnerByTimout}!`);
     console.log(
       `Congratulation player : ${winnerByTimout} you won ${knownGameState.betInAda} Ada + Original ${knownGameState.betInAda} Ada`
