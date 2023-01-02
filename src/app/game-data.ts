@@ -116,7 +116,7 @@ export class GameInitiated implements ToScriptDataSerialise {
   constructor(
     public readonly playerOneAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: number,
+    public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number
   ) {}
 
@@ -124,9 +124,14 @@ export class GameInitiated implements ToScriptDataSerialise {
     return DataConstr.from(GameStateConstuctors.GameInitiated, [
       DataBytes.fromString(this.playerOneAddress),
       DataNumber.fromNumber(this.betInAda),
-      DataNumber.fromNumber(this.gameMaxIntervalInMins),
+      DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
     ]);
+  }
+
+  expiresAtPosixTime(): number {
+    const gameMaxIntervalInMillis = this.gameMaxIntervalInSeconds * 1000;
+    return this.occurredAtPosixTime + gameMaxIntervalInMillis;
   }
 }
 
@@ -135,7 +140,7 @@ export class GameStarted implements ToScriptDataSerialise {
     public readonly playerOneAddress: string,
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: number,
+    public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
     public readonly playerAddressToMakeMove: string
   ) {}
@@ -144,10 +149,14 @@ export class GameStarted implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerOneAddress),
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
-      DataNumber.fromNumber(this.gameMaxIntervalInMins),
+      DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       DataBytes.fromString(this.playerAddressToMakeMove),
     ]);
+  }
+  expiresAtPosixTime(): number {
+    const gameMaxIntervalInMillis = this.gameMaxIntervalInSeconds * 1000;
+    return this.occurredAtPosixTime + gameMaxIntervalInMillis;
   }
 }
 
@@ -156,7 +165,7 @@ export class GameInProgress implements ToScriptDataSerialise {
     public readonly playerOneAddress: string,
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: number,
+    public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
     public readonly playerAddressToMakeMove: string,
     public readonly moves: Moves
@@ -167,11 +176,15 @@ export class GameInProgress implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerOneAddress),
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
-      DataNumber.fromNumber(this.gameMaxIntervalInMins),
+      DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       DataBytes.fromString(this.playerAddressToMakeMove),
       this.moves.toScriptData(),
     ]);
+  }
+  expiresAtPosixTime(): number {
+    const gameMaxIntervalInMillis = this.gameMaxIntervalInSeconds * 1000;
+    return this.occurredAtPosixTime + gameMaxIntervalInMillis;
   }
 }
 
@@ -180,7 +193,7 @@ export class GameIsWon implements ToScriptDataSerialise {
     public readonly playerOneAddress: string,
     public readonly playerTwoAddress: string,
     public readonly betInAda: number,
-    public readonly gameMaxIntervalInMins: number,
+    public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
     public readonly winningPlayerAddress: string,
     public readonly moves: Moves
@@ -191,7 +204,7 @@ export class GameIsWon implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerOneAddress),
       DataBytes.fromString(this.playerTwoAddress),
       DataNumber.fromNumber(this.betInAda),
-      DataNumber.fromNumber(this.gameMaxIntervalInMins),
+      DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       DataBytes.fromString(this.winningPlayerAddress),
       this.moves.toScriptData(),
@@ -348,14 +361,14 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[1] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[1] as DataNumber;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[2] as DataNumber;
+    const gameMaxIntervalInSecondsData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
     const occurredAtPosixTimeData: DataNumber = data.getFields()[3] as DataNumber;
 
     return new GameInitiated(
       playerOneAddressData.toString(),
       betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
+      gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue()
     );
   }
@@ -369,7 +382,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
+    const gameMaxIntervalInSecondsData: DataNumber = data.getFields()[3] as DataNumber;
     assert.equal(data.getFields()[4] instanceof DataNumber, true);
     const occurredAtPosixTimeData: DataNumber = data.getFields()[4] as DataNumber;
     assert.equal(data.getFields()[5] instanceof DataBytes, true);
@@ -379,7 +392,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       playerOneAddressData.toString(),
       playerTwoAddressData.toString(),
       betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
+      gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
       playerAddressToMakeMoveData.toString()
     );
@@ -394,7 +407,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
+    const gameMaxIntervalInSecondsData: DataNumber = data.getFields()[3] as DataNumber;
     assert.equal(data.getFields()[4] instanceof DataNumber, true);
     const occurredAtPosixTimeData: DataNumber = data.getFields()[4] as DataNumber;
     assert.equal(data.getFields()[5] instanceof DataBytes, true);
@@ -411,7 +424,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       playerOneAddressData.toString(),
       playerTwoAddressData.toString(),
       betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
+      gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
       playerAddressToMakeMoveData.toString(),
       new MovesFactory().fromScriptData(movesData)
@@ -427,7 +440,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInMinsData: DataNumber = data.getFields()[3] as DataNumber;
+    const gameMaxIntervalInSecondsData: DataNumber = data.getFields()[3] as DataNumber;
     assert.equal(data.getFields()[4] instanceof DataNumber, true);
     const occurredAtPosixTimeData: DataNumber = data.getFields()[4] as DataNumber;
     assert.equal(data.getFields()[5] instanceof DataBytes, true);
@@ -444,7 +457,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       playerOneAddressData.toString(),
       playerTwoAddressData.toString(),
       betInAdaData.getValue(),
-      gameMaxIntervalInMinsData.getValue(),
+      gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
       winningPlayerAddressData.toString(),
       new MovesFactory().fromScriptData(movesData)
