@@ -41,7 +41,14 @@ export class Game {
 
   static startGame(params: StartGameParams): Game {
     //create game state from params
-    const gameState = new GameInitiated(params.playerOneAddress, params.betInAda, params.gameMaxIntervalInMins);
+    const postixTimeNow = +Date.now().toString();
+
+    const gameState = new GameInitiated(
+      params.playerOneAddress,
+      params.betInAda,
+      params.gameMaxIntervalInMins,
+      postixTimeNow
+    );
     return new Game(gameState);
   }
 
@@ -52,15 +59,17 @@ export class Game {
   joinGame(params: JoinGameParams): Game {
     assert.equal(this.gameState instanceof GameInitiated, true);
     const currentGamestate: GameInitiated = this.gameState as GameInitiated;
-    const playerTwoAddress=params.playerTwoAddress;
+    const playerTwoAddress = params.playerTwoAddress;
     //randomize which player to start;
     const playerAddressToMakeMove = playerTwoAddress;
+    const postixTimeNow = +Date.now().toString();
 
     const gameState = new GameStarted(
       currentGamestate.playerOneAddress,
       params.playerTwoAddress,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInMins,
+      postixTimeNow,
       playerAddressToMakeMove
     );
 
@@ -82,6 +91,8 @@ export class Game {
       playerAddressToMakeMove = currentGamestate.playerTwoAddress;
     }
 
+    const postixTimeNow = +Date.now().toString();
+
     const move = Moves.initialise();
 
     const gameState = new GameInProgress(
@@ -89,6 +100,7 @@ export class Game {
       currentGamestate.playerTwoAddress,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInMins,
+      postixTimeNow,
       playerAddressToMakeMove,
       move.makeMove(params.playerAddress, params.move)
     );
@@ -115,6 +127,7 @@ export class Game {
 
     const currentMoves = currentGamestate.moves;
     const newMoves = currentMoves.makeMove(params.playerAddress, params.move);
+    const postixTimeNow = +Date.now().toString();
 
     let gameState: GameState;
 
@@ -124,6 +137,7 @@ export class Game {
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInMins,
+        postixTimeNow,
         params.playerAddress, //winning player address
         newMoves
       );
@@ -132,6 +146,7 @@ export class Game {
         currentGamestate.playerOneAddress,
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
+        postixTimeNow,
         newMoves
       );
     } else {
@@ -140,6 +155,7 @@ export class Game {
         currentGamestate.playerTwoAddress,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInMins,
+        postixTimeNow,
         playerAddressToMakeMove,
         newMoves
       );
