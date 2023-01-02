@@ -24,14 +24,10 @@ export abstract class FromScriptDataFactory<T> {
   abstract fromScriptData(data: Data): T;
 }
 
-export class ScriptDataJsonSchema {
+export enum ScriptDataJsonSchema {
   // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
-  static get ScriptDataJsonNoSchema() {
-    return 0;
-  }
-  static get ScriptDataJsonDetailedSchema() {
-    return 1;
-  }
+  ScriptDataJsonNoSchema = 0,
+  ScriptDataJsonDetailedSchema = 1,
 }
 
 abstract class ScriptData {
