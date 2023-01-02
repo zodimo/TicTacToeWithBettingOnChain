@@ -16,6 +16,14 @@ import * as csl from "@emurgo/cardano-serialization-lib-nodejs";
  *          ]}
  */
 
+export interface ToScriptDataSerialise {
+  toScriptData(): Data;
+}
+
+export abstract class FromScriptDataFactory<T> {
+  abstract fromScriptData(data: Data): T;
+}
+
 export class ScriptDataJsonSchema {
   // @see node_modules/@emurgo/cardano-serialization-lib-nodejs/cardano_serialization_lib.js:815
   static get ScriptDataJsonNoSchema() {
