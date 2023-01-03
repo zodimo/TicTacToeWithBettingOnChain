@@ -219,7 +219,7 @@ export class GameIsWon implements ToScriptDataSerialise {
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
-    public readonly winningPlayerAddress: string,
+    public readonly winningPlayerPubKeyHash: string,
     public readonly moves: Moves
   ) {}
 
@@ -230,7 +230,7 @@ export class GameIsWon implements ToScriptDataSerialise {
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
-      DataBytes.fromString(this.winningPlayerAddress),
+      DataBytes.fromString(this.winningPlayerPubKeyHash),
       this.moves.toScriptData(),
     ]);
   }
@@ -468,7 +468,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     assert.equal(data.getFields()[4] instanceof DataNumber, true);
     const occurredAtPosixTimeData: DataNumber = data.getFields()[4] as DataNumber;
     assert.equal(data.getFields()[5] instanceof DataBytes, true);
-    const winningPlayerAddressData: DataBytes = data.getFields()[5] as DataBytes;
+    const winningPlayerPubKeyHashData: DataBytes = data.getFields()[5] as DataBytes;
 
     assert.equal(
       data.getFields()[6] instanceof DataConstr,
@@ -483,7 +483,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
-      winningPlayerAddressData.toString(),
+      winningPlayerPubKeyHashData.toString(),
       new MovesFactory().fromScriptData(movesData)
     );
   }
