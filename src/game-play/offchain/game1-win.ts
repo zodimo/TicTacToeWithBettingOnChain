@@ -6,14 +6,12 @@ import {
   JoinGameParams,
   StartGameParams,
   MakeMoveParams,
-} from "../../app/game-data.js";
-import {
   ClaimWinCommand,
-  Game,
   JoinGameCommand,
   MakeMoveCommand,
   StartGameCommand,
-} from "../../app/game.js";
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 // TX 1

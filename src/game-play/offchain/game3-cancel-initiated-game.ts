@@ -1,5 +1,10 @@
-import { GameState, GameStateFactory, StartGameParams } from "../../app/game-data.js";
-import { CancelInitiatedGameCommand, Game, GamePayOut, StartGameCommand } from "../../app/game.js";
+import {
+  GameStateFactory,
+  StartGameParams,
+  CancelInitiatedGameCommand,
+  StartGameCommand,
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
 import { runCommand } from "../../cardano-cli/run-command.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 

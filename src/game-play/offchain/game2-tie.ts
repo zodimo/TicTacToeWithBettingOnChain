@@ -7,15 +7,12 @@ import {
   JoinGameParams,
   StartGameParams,
   MakeMoveParams,
-} from "../../app/game-data.js";
-import {
   ClaimTieCommand,
-  Game,
-  GamePayOut,
   JoinGameCommand,
   MakeMoveCommand,
   StartGameCommand,
-} from "../../app/game.js";
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 /**

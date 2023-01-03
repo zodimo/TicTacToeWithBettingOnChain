@@ -1,5 +1,12 @@
-import { GameState, GameStateFactory, JoinGameParams, StartGameParams } from "../../app/game-data.js";
-import { CancelInProgressGameCommand, Game, GamePayOut, JoinGameCommand, StartGameCommand } from "../../app/game.js";
+import {
+  GameStateFactory,
+  JoinGameParams,
+  StartGameParams,
+  CancelInProgressGameCommand,
+  JoinGameCommand,
+  StartGameCommand,
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
 import { runCommand } from "../../cardano-cli/run-command.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
@@ -40,6 +47,6 @@ console.log("sleeping for 5 seconds");
 runCommand(`sleep 5`);
 
 const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(tx2GameStateAsScriptData);
-const tx3Command=new CancelInProgressGameCommand(tx2GameStateFromScriptData);
-const payout=Game.handleEndGameActionCommand(tx3Command);
+const tx3Command = new CancelInProgressGameCommand(tx2GameStateFromScriptData);
+const payout = Game.handleEndGameActionCommand(tx3Command);
 console.log(payout);
