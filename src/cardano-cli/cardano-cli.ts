@@ -28,6 +28,7 @@ import { PaymentComponent } from "./command/address/build.js";
 import { StakeAddress } from "./command/stake-address.js";
 import { StakeComponent } from "./command/stake-address/stake-component.js";
 import { OutputAs } from "./command/transaction/build/output-as.js";
+import { PaymentVerificationKey } from "./command/address/key-hash.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -211,6 +212,16 @@ export class CardanoCli {
     });
 
     return utxoList;
+  }
+  
+  pubKeyHashFromVerificationKeyFile(verificationKeyFile: string): string {
+    //higher order function
+    return this.address()
+      .keyHash((builder) => {
+        builder.withPaymentVerificationKey(PaymentVerificationKey.file(verificationKeyFile));
+        return builder;
+      })
+      .runCommand();
   }
 
   transactionBuildRaw(options: TransactionBuildRawOptions): string {
