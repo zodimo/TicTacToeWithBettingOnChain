@@ -43,69 +43,71 @@ import           Control.Monad.Freer.Extras     as Extras
 
 --THE ON-CHAIN CODE
 
--- custom data types
-
-data StartGameData = StartGameData
-    { gameBetInAda   :: Integer
-    , deadlineInMins :: Integer
-    }
-
-PlutusTx.makeIsDataIndexed ''StartGameData [('StartGameData,0)]
-
-data Player = Player_X | Player_O deriving Show
-data JoinGameData = JoinGameData
-    { gameAction      :: BuiltinByteString
-    , startWithPlayer :: Player
-    } deriving Show
-
-PlutusTx.makeIsDataIndexed ''Player [('Player_X,0), ('Player_O,1)]
-PlutusTx.makeIsDataIndexed ''JoinGameData [('JoinGameData,0)]
-
+-- custom data types for DATUMS
 
 data Row = Row_A| Row_B | Row_C deriving Show
 data Column = Col_1 | Col_2 | Col_3 deriving Show
 data Move = Move Row Column deriving Show
-type Moves = [Move]
+data MoveMade = MoveMade PaymentPubKeyHash Move deriving Show
+data Moves = Moves [MoveMade] deriving Show
 
+-- template haskell to make instance of data for custom datatypes.
 PlutusTx.makeIsDataIndexed ''Row [('Row_A,0),('Row_B,1),('Row_C,2)]
 PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
+PlutusTx.makeIsDataIndexed ''MoveMade [('MoveMade,0)]
+PlutusTx.makeIsDataIndexed ''Moves [('Moves,0)]
 
 
--- gameState is derived not saved in the datum.
--- rootPkh :: BuiltinByteString
--- rootPkh=""
-
--- isRootPKH :: PaymentPubKeyHash -> rootPkh -> Bool
--- isRootPKH ppkh rpkh = rpkh == (getPubKeyHash $ unPaymentPubKeyHash ppkh)
-
-
-data GameState = Initiated | Running | Xwins | Owins | Atie | Cancelled | Invalid deriving (Show)
-data GameStateDatum = StartedDatum
-    { oWallet     :: PaymentPubKeyHash
-    , deadline    :: POSIXTime
-    , bet         :: Integer
-    } | JoinedDatum 
-    { oWallet     :: PaymentPubKeyHash
-    , xWallet     :: PaymentPubKeyHash
-    , deadline    :: POSIXTime
-    , bet :: Integer
-    , gameState   :: GameState
-    } | MovedDatum
-    { oWallet     :: PaymentPubKeyHash
-    , xWallet     :: PaymentPubKeyHash
-    , deadline    :: POSIXTime
-    , bet         :: Integer 
-    , moves       :: [Move] 
-    , gameState   :: GameState
-     }
-    --  exit routes dont produce datums
-     deriving Show
-
+data GameState = GameInitiated
+    { giPlayerOnePubKeyHash         :: BuiltinByteString
+    , giBetInAda                    :: Integer
+    , giGameMaxIntervalInSeconds    :: Integer
+    , giOccurredAtPosixTime         :: Integer
+    } | GameStarted 
+    { gsPlayerOnePubKeyHash         :: BuiltinByteString
+    , gsPlayerTwoPubKeyHash         :: BuiltinByteString
+    , gsBetInAda                    :: Integer
+    , gsGameMaxIntervalInSeconds    :: Integer
+    , gsOccurredAtPosixTime         :: Integer
+    , gsPlayerAddressToMakeMove     :: BuiltinByteString
+    } | GameInProgress
+    { gipPlayerOnePubKeyHash        :: BuiltinByteString
+    , gipPlayerTwoPubKeyHash        :: BuiltinByteString
+    , gipBetInAda                   :: Integer
+    , gipGameMaxIntervalInSeconds   :: Integer
+    , gipOccurredAtPosixTime        :: Integer
+    , gipPlayerAddressToMakeMove    :: BuiltinByteString
+    , gipMoves                      :: Moves
+    } | GameIsWon
+    { giwPlayerOnePubKeyHash        :: BuiltinByteString
+    , giwPlayerTwoPubKeyHash        :: BuiltinByteString
+    , giwBetInAda                   :: Integer
+    , giwGameMaxIntervalInSeconds   :: Integer
+    , giwOccurredAtPosixTime        :: Integer
+    , giwWinningPlayerAddress       :: BuiltinByteString
+    , giwMoves                      :: Moves
+    } | GameIsTied
+    { gitPlayerOnePubKeyHash        :: BuiltinByteString
+    , gitPlayerTwoPubKeyHash        :: BuiltinByteString
+    , gitBetInAda                   :: Integer
+    , gitOccurredAtPosixTime        :: Integer
+    , gitMoves                      :: Moves
+    } deriving (Show)
 
 -- template haskell to make instance of data for custom datatypes.
-PlutusTx.unstableMakeIsData ''GameStateDatum
-PlutusTx.unstableMakeIsData ''GameState
+PlutusTx.makeIsDataIndexed ''GameState [('GameInitiated, 0), ('GameStarted, 1), ('GameInProgress, 2), ('GameIsWon, 3), ('GameIsTied, 4)]
+
+-- Custom DataTypes for Redeemers
+-- JoinGameParams
+-- MakeMoveParams
+-- cancelInitiatedGame
+-- cancelStartedGame
+-- cancelInProgressGame
+-- claimWin
+-- claimTie
+
+
 
 
 {-# INLINABLE mkValidator #-} -- Everything that its supposed to run in on-chain code need this pragma
@@ -115,6 +117,7 @@ mkValidator :: () -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
 mkValidator _ _ _ = True
+
 
 
 data Game
