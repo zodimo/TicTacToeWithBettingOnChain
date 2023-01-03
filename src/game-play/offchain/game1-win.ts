@@ -1,5 +1,14 @@
-import { Column, GameState, GameStateFactory, Move, Row } from "../../app/game-data.js";
-import { Game, JoinGameParams, StartGameParams, MakeMoveParams } from "../../app/game.js";
+import {
+  Column,
+  GameState,
+  GameStateFactory,
+  Move,
+  Row,
+  JoinGameParams,
+  StartGameParams,
+  MakeMoveParams,
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 // TX 1
@@ -44,11 +53,10 @@ console.log(
 // TX 3
 // fake game start with player 2 as O and move A 1
 
-//    1   2   3  
-// A _O_|___|___ 
+//    1   2   3
+// A _O_|___|___
 // B ___|___|___
-// C    |   | 
-
+// C    |   |
 
 const move1 = new Move(Row.ROW_A, Column.Col_1);
 const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
@@ -71,11 +79,11 @@ console.log(
 
 // TX 4
 // Player 1 Move B 2
-//    1   2   3  
+//    1   2   3
 
-// A _O_|___|___ 
+// A _O_|___|___
 // B ___|_X_|___
-// C    |   | 
+// C    |   |
 
 const move2 = new Move(Row.ROW_B, Column.Col_2);
 const makeMoveParams2 = new MakeMoveParams(playerOneAddress, move2);
@@ -99,9 +107,9 @@ console.log(
 // TX 5
 // Player 2 Move A 2
 
-// A _O_|_O_|___ 
+// A _O_|_O_|___
 // B ___|_X_|___
-// C    |   | 
+// C    |   |
 
 const move3 = new Move(Row.ROW_A, Column.Col_2);
 const makeMoveParams3 = new MakeMoveParams(playerTwoAddress, move3);
@@ -125,9 +133,9 @@ console.log(
 // TX 6
 // Player 1 Move B 3
 
-// A _O_|_O_|___ 
+// A _O_|_O_|___
 // B ___|_X_|_X_
-// C    |   | 
+// C    |   |
 
 const move4 = new Move(Row.ROW_B, Column.Col_3);
 const makeMoveParams4 = new MakeMoveParams(playerOneAddress, move4);
@@ -151,9 +159,9 @@ console.log(
 // TX 7
 // Player 2 Move A 3
 
-// A _O_|_O_|_O_ 
+// A _O_|_O_|_O_
 // B ___|_X_|_X_
-// C    |   | 
+// C    |   |
 
 const move5 = new Move(Row.ROW_A, Column.Col_3);
 const makeMoveParams5 = new MakeMoveParams(playerTwoAddress, move5);

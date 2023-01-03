@@ -1,6 +1,15 @@
-import { Column, GameState, GameStateFactory, Move, Row } from "../app/game-data.js";
-import { Game, JoinGameParams, StartGameParams, MakeMoveParams } from "../app/game.js";
-import { ScriptDataJsonSchema } from "../cardano-cli/script-data.js";
+import {
+  Column,
+  GameState,
+  GameStateFactory,
+  Move,
+  Row,
+  JoinGameParams,
+  StartGameParams,
+  MakeMoveParams,
+} from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
+import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 /**
  * The changes from the wins is from TX7

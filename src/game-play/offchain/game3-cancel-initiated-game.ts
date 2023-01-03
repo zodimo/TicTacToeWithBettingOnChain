@@ -1,7 +1,7 @@
-import { GameState, GameStateFactory } from "../app/game-data.js";
-import { Game, StartGameParams } from "../app/game.js";
-import { runCommand } from "../cardano-cli/run-command.js";
-import { ScriptDataJsonSchema } from "../cardano-cli/script-data.js";
+import { GameState, GameStateFactory, StartGameParams } from "../../app/game-data.js";
+import { Game } from "../../app/game.js";
+import { runCommand } from "../../cardano-cli/run-command.js";
+import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 // TX 1
 const playerOneAddress = "Player1Address";
