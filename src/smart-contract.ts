@@ -10,7 +10,10 @@ const __dirname = path.dirname(__filename);
 export const getScriptFile = () => {
   // get script address
   return __dirname + "/../testnet/ticTacToe.plutus";
-  // return __dirname + "/../testnet/untyped.plutus";
+};
+
+export const getUntypedScriptFile = () => {
+  return __dirname + "/../testnet/untyped.plutus";
 };
 
 export const getScriptAddress = () => {
@@ -19,6 +22,15 @@ export const getScriptAddress = () => {
   cardanoCli.paymentAddressBuild(
     scriptWalletName,
     new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getScriptFile()))
+  );
+  return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
+};
+
+export const getUntypedScriptAddress = () => {
+  const scriptWalletName = "untyped";
+  cardanoCli.paymentAddressBuild(
+    scriptWalletName,
+    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getUntypedScriptFile()))
   );
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
