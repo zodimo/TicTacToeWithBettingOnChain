@@ -8,7 +8,7 @@ import {
   StartGameParams,
   MakeMoveParams,
 } from "../../app/game-data.js";
-import { Game } from "../../app/game.js";
+import { Game, GamePayOut } from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 // TX 1
@@ -61,8 +61,7 @@ console.log(
 const move1 = new Move(Row.ROW_A, Column.Col_1);
 const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
 const tx3: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  //Make first move
-  return Game.loadGame(gamestate).makeFirstMove(makeMoveParams).gameState;
+  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
 };
 const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(tx2GameStateAsScriptData);
 const tx3GameState = tx3(tx2GameStateFromScriptData, makeMoveParams1);
@@ -183,9 +182,9 @@ console.log(
 //////////////////////////////////////////////
 
 const tx7GameStateFromScriptData = new GameStateFactory().fromScriptData(tx7GameStateAsScriptData);
-const tx8: (gameState: GameState) => void = (gamestate) => {
-  Game.loadGame(gamestate).claimWin();
+const tx8: (gameState: GameState) => GamePayOut = (gamestate) => {
+  return Game.loadGame(gamestate).claimWin();
 };
 // TX 8 Claim Win
 console.log("##########################");
-tx8(tx7GameStateFromScriptData);
+console.log(tx8(tx7GameStateFromScriptData));

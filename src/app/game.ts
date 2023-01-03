@@ -1,9 +1,9 @@
 /**
  * This is where the magic will happen
  *
- * EventDriven and Immutable
+ * Command Driven and Immutable
  *
- * write the game first, them make the transitional validation onchainable :)
+ * write the game first, then make the transitional validation onchainable :)
  */
 
 import assert from "assert";
@@ -13,20 +13,177 @@ import {
   GameInProgress,
   GameIsTied,
   GameIsWon,
-  GameStarted,
   GameState,
   JoinGameParams,
   MakeMoveParams,
-  Move,
   Moves,
   Row,
   StartGameParams,
 } from "./game-data.js";
 
+// Commands
 
+enum GameAction {
+  START_GAME = "start-game",
+  JOIN_GAME = "join-game",
+  MAKE_MOVE = "make-move",
+  CLAIM_WIN = "claim-win",
+  CLAIM_TIE = "claim-tie",
+  CANCEL_INITIATED_GAME = "cancel-initiated-game",
+  CANCEL_IN_PROGRESS_GAME = "cancel-in-progress-game",
+}
+
+interface GameActionCommandInterface<T> {
+  getAction(): GameAction;
+  getParameters(): T;
+}
+
+export class StartGameCommand implements GameActionCommandInterface<StartGameParams> {
+  constructor(private params: StartGameParams) {}
+  getAction(): GameAction {
+    return GameAction.START_GAME;
+  }
+  getParameters(): StartGameParams {
+    return this.params;
+  }
+}
+
+export class JoinGameCommand implements GameActionCommandInterface<JoinGameParams> {
+  constructor(private gameState: GameState, private params: JoinGameParams) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.JOIN_GAME;
+  }
+  getParameters(): JoinGameParams {
+    return this.params;
+  }
+}
+
+export class MakeMoveCommand implements GameActionCommandInterface<MakeMoveParams> {
+  constructor(private gameState: GameState, private params: MakeMoveParams) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.JOIN_GAME;
+  }
+  getParameters(): MakeMoveParams {
+    return this.params;
+  }
+}
+
+export class ClaimWinCommand implements GameActionCommandInterface<void> {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.CLAIM_WIN;
+  }
+  getParameters(): void {}
+}
+
+export class ClaimTieCommand implements GameActionCommandInterface<void> {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.CLAIM_TIE;
+  }
+  getParameters(): void {}
+}
+
+export class CancelInitiatedGameCommand implements GameActionCommandInterface<void> {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.CANCEL_INITIATED_GAME;
+  }
+  getParameters(): void {}
+}
+
+export class CancelInProgressGameCommand implements GameActionCommandInterface<void> {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.CANCEL_IN_PROGRESS_GAME;
+  }
+  getParameters(): void {}
+}
+
+export type GameActionCommand =
+  | StartGameCommand
+  | JoinGameCommand
+  | MakeMoveCommand
+  | ClaimWinCommand
+  | ClaimTieCommand
+  | CancelInitiatedGameCommand
+  | CancelInProgressGameCommand;
+
+export class Payout {
+  constructor(public readonly pubKeyHash: string, public readonly amountInAda: number) {}
+}
+
+export class GameIsWonPayout {
+  constructor(public readonly payout: Payout) {}
+}
+
+export class GameIsTiePayout {
+  constructor(public readonly payouts: Payout[]) {}
+}
+
+export class InitiatedGameIsCancelledPayout {
+  constructor(public readonly payout: Payout) {}
+}
+
+export class InprogressGameIsCancelledPayout {
+  constructor(public readonly payout: Payout) {}
+}
+
+export type GamePayOut =
+  | GameIsWonPayout
+  | GameIsTiePayout
+  | InitiatedGameIsCancelledPayout
+  | InprogressGameIsCancelledPayout;
 
 export class Game {
   private constructor(public readonly gameState: GameState) {}
+
+  static handleActionCommand(actionCommand: GameActionCommand): GameState | GamePayOut {
+    switch (actionCommand.getAction()) {
+      case GameAction.START_GAME:
+        return Game.startGame((actionCommand as StartGameCommand).getParameters()).gameState;
+
+      case GameAction.JOIN_GAME:
+        return Game.loadGame((actionCommand as JoinGameCommand).getGameState()).joinGame(
+          (actionCommand as JoinGameCommand).getParameters()
+        ).gameState;
+
+      case GameAction.MAKE_MOVE:
+        return Game.loadGame((actionCommand as MakeMoveCommand).getGameState()).makeMove(
+          (actionCommand as MakeMoveCommand).getParameters()
+        ).gameState;
+
+      case GameAction.CLAIM_WIN:
+        return Game.loadGame((actionCommand as ClaimWinCommand).getGameState()).claimWin();
+
+      case GameAction.CLAIM_TIE:
+        return Game.loadGame((actionCommand as ClaimTieCommand).getGameState()).claimTie();
+      case GameAction.CANCEL_INITIATED_GAME:
+        return Game.loadGame((actionCommand as CancelInitiatedGameCommand).getGameState()).cancelInitiatedGame();
+      case GameAction.CANCEL_IN_PROGRESS_GAME:
+        return Game.loadGame((actionCommand as CancelInProgressGameCommand).getGameState()).cancelInProgressGame();
+      default:
+        throw new Error(`Unknown action : ${actionCommand.getAction()}`);
+    }
+  }
 
   static startGame(params: StartGameParams): Game {
     //create game state from params
@@ -53,46 +210,16 @@ export class Game {
     const playerAddressToMakeMove = playerTwoPubKeyHash;
     const postixTimeNow = +Date.now().toString();
 
-    const gameState = new GameStarted(
+    const gameState = new GameInProgress(
       currentGamestate.playerOnePubKeyHash,
       params.playerTwoPubKeyHash,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
-      playerAddressToMakeMove
-    );
-
-    return new Game(gameState);
-  }
-
-  makeFirstMove(params: MakeMoveParams): Game {
-    assert.equal(
-      this.gameState instanceof GameStarted,
-      true,
-      `Game must be Started!, current state: ${this.gameState.constructor.name}`
-    );
-    const currentGamestate: GameStarted = this.gameState as GameStarted;
-    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash, true, "Wrong player playing now!");
-
-    // select other player to play next.
-    let playerAddressToMakeMove = currentGamestate.playerOnePubKeyHash;
-    if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
-      playerAddressToMakeMove = currentGamestate.playerTwoPubKeyHash;
-    }
-
-    const postixTimeNow = +Date.now().toString();
-
-    const move = Moves.initialise();
-
-    const gameState = new GameInProgress(
-      currentGamestate.playerOnePubKeyHash,
-      currentGamestate.playerTwoPubKeyHash,
-      currentGamestate.betInAda,
-      currentGamestate.gameMaxIntervalInSeconds,
-      postixTimeNow,
       playerAddressToMakeMove,
-      move.makeMove(params.playerPubKeyHash, params.move)
+      Moves.initialise()
     );
+
     return new Game(gameState);
   }
 
@@ -104,7 +231,11 @@ export class Game {
     );
 
     const currentGamestate: GameInProgress = this.gameState as GameInProgress;
-    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash, true, "Wrong player playing now!");
+    assert.equal(
+      currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash,
+      true,
+      "Wrong player playing now!"
+    );
 
     // select other player to play next.
     let playerAddressToMakeMove = currentGamestate.playerOnePubKeyHash;
@@ -153,75 +284,56 @@ export class Game {
     return new Game(gameState);
   }
 
-  cancelInitiatedGame() {
+  cancelInitiatedGame(): GamePayOut {
     assert.equal(
       this.gameState instanceof GameInitiated,
       true,
       `GameState is expected to be GameInitiated, got ${this.gameState.constructor.name}`
     );
-    const knownGameState: GameInitiated = this.gameState as GameInitiated;
+    const currentGamestate: GameInitiated = this.gameState as GameInitiated;
     const postixTimeNow = +Date.now().toString();
     assert.equal(
-      knownGameState.expiresAtPosixTime() < postixTimeNow,
+      currentGamestate.expiresAtPosixTime() < postixTimeNow,
       true,
       "Expected Game to have reached its timeout!"
     );
 
-    console.log(`Nobody want to play! ,You can have your ${knownGameState.betInAda} Ada back!`);
-  }
+    console.log(`Nobody want to play! ,You can have your ${currentGamestate.betInAda} Ada back!`);
 
-  cancelStartedGame() {
-    assert.equal(
-      this.gameState instanceof GameStarted,
-      true,
-      `GameState is expected to be GameStarted, got ${this.gameState.constructor.name}`
-    );
-    const knownGameState: GameStarted = this.gameState as GameStarted;
-    const postixTimeNow = +Date.now().toString();
-    assert.equal(
-      knownGameState.expiresAtPosixTime() < postixTimeNow,
-      true,
-      "Expected Game to have reached its timeout!"
-    );
-
-    let winnerByTimout = knownGameState.playerOnePubKeyHash;
-    if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
-      winnerByTimout = knownGameState.playerTwoPubKeyHash;
-    }
-
-    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to respond.`);
-    console.log(`Winner by TIMEOUT is ${winnerByTimout}!`);
-    console.log(
-      `Congratulation player : ${winnerByTimout} you won ${knownGameState.betInAda} Ada + Original ${knownGameState.betInAda} Ada`
+    return new InitiatedGameIsCancelledPayout(
+      new Payout(currentGamestate.playerOnePubKeyHash, currentGamestate.betInAda)
     );
   }
-  cancelInProgressGame() {
+
+  cancelInProgressGame(): GamePayOut {
     assert.equal(
       this.gameState instanceof GameInProgress,
       true,
       `GameState is expected to be GameInProgress, got ${this.gameState.constructor.name}`
     );
-    const knownGameState: GameInProgress = this.gameState as GameInProgress;
+    const currentGamestate: GameInProgress = this.gameState as GameInProgress;
     const postixTimeNow = +Date.now().toString();
     assert.equal(
-      knownGameState.expiresAtPosixTime() < postixTimeNow,
+      currentGamestate.expiresAtPosixTime() < postixTimeNow,
       true,
       "Expected Game to have reached its timeout!"
     );
 
-    let winnerByTimout = knownGameState.playerOnePubKeyHash;
-    if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
-      winnerByTimout = knownGameState.playerTwoPubKeyHash;
+    let winnerByTimout = currentGamestate.playerOnePubKeyHash;
+    if (currentGamestate.playerAddressToMakeMove == winnerByTimout) {
+      winnerByTimout = currentGamestate.playerTwoPubKeyHash;
     }
 
-    console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to repond.`);
+    console.log(`Player ${currentGamestate.playerAddressToMakeMove} has failed to repond.`);
     console.log(`Winner by TIMEOUT is ${winnerByTimout}!`);
     console.log(
-      `Congratulation player : ${winnerByTimout} you won ${knownGameState.betInAda} Ada + Original ${knownGameState.betInAda} Ada`
+      `Congratulation player : ${winnerByTimout} you won ${currentGamestate.betInAda} Ada + Original ${currentGamestate.betInAda} Ada`
     );
+    const payoutAmountInAda = currentGamestate.betInAda * 2;
+    return new InprogressGameIsCancelledPayout(new Payout(winnerByTimout, payoutAmountInAda));
   }
 
-  claimWin() {
+  claimWin(): GamePayOut {
     //the wallet call this methods will pay the fees.
     assert.equal(
       this.gameState instanceof GameIsWon,
@@ -231,10 +343,12 @@ export class Game {
     const currentGamestate: GameIsWon = this.gameState as GameIsWon;
 
     console.log(
-      `Congratulation player : ${currentGamestate.winningPlayerAddress} you won ${currentGamestate.betInAda} Ada + Original ${currentGamestate.betInAda} Ada`
+      `Congratulation player : ${currentGamestate.winningPlayerPubKeyHash} you won ${currentGamestate.betInAda} Ada + Original ${currentGamestate.betInAda} Ada`
     );
+    const payoutAmountInAda = currentGamestate.betInAda * 2;
+    return new GameIsWonPayout(new Payout(currentGamestate.winningPlayerPubKeyHash, payoutAmountInAda));
   }
-  claimTie() {
+  claimTie(): GamePayOut {
     //the wallet call this methods will pay the fees.
     assert.equal(
       this.gameState instanceof GameIsTied,
@@ -245,9 +359,10 @@ export class Game {
     console.log("Game is Tied, return player bets.");
     console.log(`player : ${currentGamestate.playerOnePubKeyHash} ${currentGamestate.betInAda} Ada returned`);
     console.log(`player : ${currentGamestate.playerTwoPubKeyHash} ${currentGamestate.betInAda} Ada returned`);
-  }
-  claimTimeOut() {
-    throw new Error("Not yet implemented!!");
+    return new GameIsTiePayout([
+      new Payout(currentGamestate.playerOnePubKeyHash, currentGamestate.betInAda),
+      new Payout(currentGamestate.playerTwoPubKeyHash, currentGamestate.betInAda),
+    ]);
   }
 
   assertGameIsPlayable(moves: Moves): void {

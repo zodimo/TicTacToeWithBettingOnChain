@@ -1,5 +1,5 @@
 import { GameState, GameStateFactory, StartGameParams } from "../../app/game-data.js";
-import { Game } from "../../app/game.js";
+import { Game, GamePayOut } from "../../app/game.js";
 import { runCommand } from "../../cardano-cli/run-command.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
@@ -27,8 +27,8 @@ runCommand(`sleep 5`);
 
 // Cancel game
 
-const tx2: (gameState: GameState) => void = (gamestate) => {
-  Game.loadGame(gamestate).cancelInitiatedGame();
+const tx2: (gameState: GameState) => GamePayOut = (gamestate) => {
+  return Game.loadGame(gamestate).cancelInitiatedGame();
 };
 const tx1GameStateFromScriptData = new GameStateFactory().fromScriptData(tx1GameStateAsScriptData);
-tx2(tx1GameStateFromScriptData);
+console.log(tx2(tx1GameStateFromScriptData));
