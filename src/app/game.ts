@@ -27,18 +27,21 @@ enum GameAction {
   START_GAME = "start-game",
   JOIN_GAME = "join-game",
   MAKE_MOVE = "make-move",
-  CLAIM_WIN = "claim-win",
-  CLAIM_TIE = "claim-tie",
+}
+
+enum GameEndAction {
   CANCEL_INITIATED_GAME = "cancel-initiated-game",
   CANCEL_IN_PROGRESS_GAME = "cancel-in-progress-game",
+  CLAIM_WIN = "claim-win",
+  CLAIM_TIE = "claim-tie",
 }
 
-interface GameActionCommandInterface<T> {
-  getAction(): GameAction;
-  getParameters(): T;
+interface GameActionCommandInterface<T, U> {
+  getAction(): T;
+  getParameters(): U;
 }
 
-export class StartGameCommand implements GameActionCommandInterface<StartGameParams> {
+export class StartGameCommand implements GameActionCommandInterface<GameAction, StartGameParams> {
   constructor(private params: StartGameParams) {}
   getAction(): GameAction {
     return GameAction.START_GAME;
@@ -48,7 +51,7 @@ export class StartGameCommand implements GameActionCommandInterface<StartGamePar
   }
 }
 
-export class JoinGameCommand implements GameActionCommandInterface<JoinGameParams> {
+export class JoinGameCommand implements GameActionCommandInterface<GameAction, JoinGameParams> {
   constructor(private gameState: GameState, private params: JoinGameParams) {}
   getGameState(): GameState {
     return this.gameState;
@@ -61,67 +64,66 @@ export class JoinGameCommand implements GameActionCommandInterface<JoinGameParam
   }
 }
 
-export class MakeMoveCommand implements GameActionCommandInterface<MakeMoveParams> {
+export class MakeMoveCommand implements GameActionCommandInterface<GameAction, MakeMoveParams> {
   constructor(private gameState: GameState, private params: MakeMoveParams) {}
   getGameState(): GameState {
     return this.gameState;
   }
   getAction(): GameAction {
-    return GameAction.JOIN_GAME;
+    return GameAction.MAKE_MOVE;
   }
   getParameters(): MakeMoveParams {
     return this.params;
   }
 }
 
-export class ClaimWinCommand implements GameActionCommandInterface<void> {
+export class ClaimWinCommand implements GameActionCommandInterface<GameEndAction, void> {
   constructor(private gameState: GameState) {}
   getGameState(): GameState {
     return this.gameState;
   }
-  getAction(): GameAction {
-    return GameAction.CLAIM_WIN;
+  getAction(): GameEndAction {
+    return GameEndAction.CLAIM_WIN;
   }
   getParameters(): void {}
 }
 
-export class ClaimTieCommand implements GameActionCommandInterface<void> {
+export class ClaimTieCommand implements GameActionCommandInterface<GameEndAction, void> {
   constructor(private gameState: GameState) {}
   getGameState(): GameState {
     return this.gameState;
   }
-  getAction(): GameAction {
-    return GameAction.CLAIM_TIE;
+  getAction(): GameEndAction {
+    return GameEndAction.CLAIM_TIE;
   }
   getParameters(): void {}
 }
 
-export class CancelInitiatedGameCommand implements GameActionCommandInterface<void> {
+export class CancelInitiatedGameCommand implements GameActionCommandInterface<GameEndAction, void> {
   constructor(private gameState: GameState) {}
   getGameState(): GameState {
     return this.gameState;
   }
-  getAction(): GameAction {
-    return GameAction.CANCEL_INITIATED_GAME;
+  getAction(): GameEndAction {
+    return GameEndAction.CANCEL_INITIATED_GAME;
   }
   getParameters(): void {}
 }
 
-export class CancelInProgressGameCommand implements GameActionCommandInterface<void> {
+export class CancelInProgressGameCommand implements GameActionCommandInterface<GameEndAction, void> {
   constructor(private gameState: GameState) {}
   getGameState(): GameState {
     return this.gameState;
   }
-  getAction(): GameAction {
-    return GameAction.CANCEL_IN_PROGRESS_GAME;
+  getAction(): GameEndAction {
+    return GameEndAction.CANCEL_IN_PROGRESS_GAME;
   }
   getParameters(): void {}
 }
 
-export type GameActionCommand =
-  | StartGameCommand
-  | JoinGameCommand
-  | MakeMoveCommand
+export type GameActionCommand = StartGameCommand | JoinGameCommand | MakeMoveCommand;
+
+export type EndGameActionCommand =
   | ClaimWinCommand
   | ClaimTieCommand
   | CancelInitiatedGameCommand
@@ -156,7 +158,22 @@ export type GamePayOut =
 export class Game {
   private constructor(public readonly gameState: GameState) {}
 
-  static handleActionCommand(actionCommand: GameActionCommand): GameState | GamePayOut {
+  public static handleEndGameActionCommand(actionCommand: EndGameActionCommand): GamePayOut {
+    switch (actionCommand.getAction()) {
+      case GameEndAction.CLAIM_WIN:
+        return Game.loadGame((actionCommand as ClaimWinCommand).getGameState()).claimWin();
+
+      case GameEndAction.CLAIM_TIE:
+        return Game.loadGame((actionCommand as ClaimTieCommand).getGameState()).claimTie();
+      case GameEndAction.CANCEL_INITIATED_GAME:
+        return Game.loadGame((actionCommand as CancelInitiatedGameCommand).getGameState()).cancelInitiatedGame();
+      case GameEndAction.CANCEL_IN_PROGRESS_GAME:
+        return Game.loadGame((actionCommand as CancelInProgressGameCommand).getGameState()).cancelInProgressGame();
+      default:
+        throw new Error(`Unknown action : ${actionCommand.getAction()}`);
+    }
+  }
+  public static handleActionCommand(actionCommand: GameActionCommand): GameState {
     switch (actionCommand.getAction()) {
       case GameAction.START_GAME:
         return Game.startGame((actionCommand as StartGameCommand).getParameters()).gameState;
@@ -170,16 +187,6 @@ export class Game {
         return Game.loadGame((actionCommand as MakeMoveCommand).getGameState()).makeMove(
           (actionCommand as MakeMoveCommand).getParameters()
         ).gameState;
-
-      case GameAction.CLAIM_WIN:
-        return Game.loadGame((actionCommand as ClaimWinCommand).getGameState()).claimWin();
-
-      case GameAction.CLAIM_TIE:
-        return Game.loadGame((actionCommand as ClaimTieCommand).getGameState()).claimTie();
-      case GameAction.CANCEL_INITIATED_GAME:
-        return Game.loadGame((actionCommand as CancelInitiatedGameCommand).getGameState()).cancelInitiatedGame();
-      case GameAction.CANCEL_IN_PROGRESS_GAME:
-        return Game.loadGame((actionCommand as CancelInProgressGameCommand).getGameState()).cancelInProgressGame();
       default:
         throw new Error(`Unknown action : ${actionCommand.getAction()}`);
     }
