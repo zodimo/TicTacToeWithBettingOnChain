@@ -59,7 +59,7 @@ PlutusTx.makeIsDataIndexed ''MoveMade [('MoveMade,0)]
 PlutusTx.makeIsDataIndexed ''Moves [('Moves,0)]
 
 
-data GameState = GameInitiated
+data GameStateDatum = GameInitiated
     { giPlayerOnePubKeyHash         :: BuiltinByteString
     , giBetInAda                    :: Integer
     , giGameMaxIntervalInSeconds    :: Integer
@@ -96,24 +96,40 @@ data GameState = GameInitiated
     } deriving (Show)
 
 -- template haskell to make instance of data for custom datatypes.
-PlutusTx.makeIsDataIndexed ''GameState [('GameInitiated, 0), ('GameStarted, 1), ('GameInProgress, 2), ('GameIsWon, 3), ('GameIsTied, 4)]
+PlutusTx.makeIsDataIndexed ''GameStateDatum [('GameInitiated, 0), ('GameStarted, 1), ('GameInProgress, 2), ('GameIsWon, 3), ('GameIsTied, 4)]
 
 -- Custom DataTypes for Redeemers
--- JoinGameParams
--- MakeMoveParams
--- cancelInitiatedGame
--- cancelStartedGame
--- cancelInProgressGame
--- claimWin
--- claimTie
 
+-- JoinGameCommand
+-- MakeMoveCommand
+-- ClaimWinCommand
+-- ClaimTieCommand
+-- CancelInitiatedGameCommand
+-- CancelInProgressGameCommand
+
+
+data GameActionCommandRedeemer = JoinGameCommand
+    { jgcPlayerTwoPubKeyHash     :: BuiltinByteString
+    } | MakeMoveCommand
+    { mmcPlayerPubKeyHash        :: BuiltinByteString
+    , mmcMove                    :: Move
+    } | ClaimWinCommand | ClaimTieCommand | CancelInitiatedGameCommand | CancelInProgressGameCommand
+
+-- template haskell to make instance of data for custom datatypes.
+PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
+                                             , ('MakeMoveCommand, 1)
+                                             , ('ClaimWinCommand, 2)
+                                             , ('ClaimTieCommand, 3)
+                                             , ('CancelInitiatedGameCommand, 4)
+                                             , ('CancelInProgressGameCommand, 5)
+                                             ]
 
 
 
 {-# INLINABLE mkValidator #-} -- Everything that its supposed to run in on-chain code need this pragma
  -- Datum -- Redeemer -- ScriptContext
 -- mkValidator :: (GameStateDatum) -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
-mkValidator :: () -> () -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
+mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
 mkValidator _ _ _ = True
@@ -123,8 +139,8 @@ mkValidator _ _ _ = True
 data Game
 instance Scripts.ValidatorTypes Game where
     -- type instance DatumType Game = GameStateDatum
-    type instance DatumType Game = ()
-    type instance RedeemerType Game = ()
+    type instance DatumType Game = GameStateDatum
+    type instance RedeemerType Game = GameActionCommandRedeemer
 
 
 -- helper functions.
@@ -137,7 +153,7 @@ typedValidator = Scripts.mkTypedValidator @Game
     $$(PlutusTx.compile [|| wrap ||])
   where
     -- wrap = Scripts.mkUntypedValidator @GameStateDatum @()
-    wrap = Scripts.mkUntypedValidator @() @()
+    wrap = Scripts.mkUntypedValidator @GameStateDatum @GameActionCommandRedeemer
 
     
 

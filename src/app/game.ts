@@ -8,126 +8,30 @@
 
 import assert from "assert";
 import {
+  CancelInitiatedGameCommand,
+  CancelInProgressGameCommand,
+  ClaimTieCommand,
+  ClaimWinCommand,
   Column,
+  EndGameActionCommand,
+  GameAction,
+  GameActionCommand,
+  GameEndAction,
   GameInitiated,
   GameInProgress,
   GameIsTied,
   GameIsWon,
   GameState,
+  JoinGameCommand,
   JoinGameParams,
+  MakeMoveCommand,
   MakeMoveParams,
   Moves,
   Row,
+  StartGameCommand,
   StartGameParams,
 } from "./game-data.js";
 
-// Commands
-
-enum GameAction {
-  START_GAME = "start-game",
-  JOIN_GAME = "join-game",
-  MAKE_MOVE = "make-move",
-}
-
-enum GameEndAction {
-  CANCEL_INITIATED_GAME = "cancel-initiated-game",
-  CANCEL_IN_PROGRESS_GAME = "cancel-in-progress-game",
-  CLAIM_WIN = "claim-win",
-  CLAIM_TIE = "claim-tie",
-}
-
-interface GameActionCommandInterface<T, U> {
-  getAction(): T;
-  getParameters(): U;
-}
-
-export class StartGameCommand implements GameActionCommandInterface<GameAction, StartGameParams> {
-  constructor(private params: StartGameParams) {}
-  getAction(): GameAction {
-    return GameAction.START_GAME;
-  }
-  getParameters(): StartGameParams {
-    return this.params;
-  }
-}
-
-export class JoinGameCommand implements GameActionCommandInterface<GameAction, JoinGameParams> {
-  constructor(private gameState: GameState, private params: JoinGameParams) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameAction {
-    return GameAction.JOIN_GAME;
-  }
-  getParameters(): JoinGameParams {
-    return this.params;
-  }
-}
-
-export class MakeMoveCommand implements GameActionCommandInterface<GameAction, MakeMoveParams> {
-  constructor(private gameState: GameState, private params: MakeMoveParams) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameAction {
-    return GameAction.MAKE_MOVE;
-  }
-  getParameters(): MakeMoveParams {
-    return this.params;
-  }
-}
-
-export class ClaimWinCommand implements GameActionCommandInterface<GameEndAction, void> {
-  constructor(private gameState: GameState) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameEndAction {
-    return GameEndAction.CLAIM_WIN;
-  }
-  getParameters(): void {}
-}
-
-export class ClaimTieCommand implements GameActionCommandInterface<GameEndAction, void> {
-  constructor(private gameState: GameState) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameEndAction {
-    return GameEndAction.CLAIM_TIE;
-  }
-  getParameters(): void {}
-}
-
-export class CancelInitiatedGameCommand implements GameActionCommandInterface<GameEndAction, void> {
-  constructor(private gameState: GameState) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameEndAction {
-    return GameEndAction.CANCEL_INITIATED_GAME;
-  }
-  getParameters(): void {}
-}
-
-export class CancelInProgressGameCommand implements GameActionCommandInterface<GameEndAction, void> {
-  constructor(private gameState: GameState) {}
-  getGameState(): GameState {
-    return this.gameState;
-  }
-  getAction(): GameEndAction {
-    return GameEndAction.CANCEL_IN_PROGRESS_GAME;
-  }
-  getParameters(): void {}
-}
-
-export type GameActionCommand = StartGameCommand | JoinGameCommand | MakeMoveCommand;
-
-export type EndGameActionCommand =
-  | ClaimWinCommand
-  | ClaimTieCommand
-  | CancelInitiatedGameCommand
-  | CancelInProgressGameCommand;
 
 export class Payout {
   constructor(public readonly pubKeyHash: string, public readonly amountInAda: number) {}

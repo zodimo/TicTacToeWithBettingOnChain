@@ -11,7 +11,154 @@ import {
 
 /**
  * REDEEMERS
+ * 
+PlutusTx.makeIsDataIndexed ''GameActionDatum [ ('JoinGameCommand, 0)
+                                             , ('MakeMoveCommand, 1)
+                                             , ('ClaimWinCommand, 2)
+                                             , ('ClaimTieCommand, 3)
+                                             , ('CancelInitiatedGameCommand, 4)
+                                             , ('CancelInProgressGameCommand, 5)
+                                             ]
  */
+
+// Commands
+
+export enum GameAction {
+  START_GAME = "start-game",
+  JOIN_GAME = "join-game",
+  MAKE_MOVE = "make-move",
+}
+
+export enum GameEndAction {
+  CANCEL_INITIATED_GAME = "cancel-initiated-game",
+  CANCEL_IN_PROGRESS_GAME = "cancel-in-progress-game",
+  CLAIM_WIN = "claim-win",
+  CLAIM_TIE = "claim-tie",
+}
+
+interface GameActionCommandInterface<T, U> {
+  getAction(): T;
+  getParameters(): U;
+}
+
+export interface ToRedeemerScriptData {
+  toRedeemerScriptData(): Data;
+}
+
+export class StartGameCommand implements GameActionCommandInterface<GameAction, StartGameParams> {
+  constructor(private params: StartGameParams) {}
+  getAction(): GameAction {
+    return GameAction.START_GAME;
+  }
+  getParameters(): StartGameParams {
+    return this.params;
+  }
+}
+
+export class JoinGameCommand implements GameActionCommandInterface<GameAction, JoinGameParams>, ToRedeemerScriptData {
+  constructor(private gameState: GameState, private params: JoinGameParams) {}
+
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.JOIN_GAME;
+  }
+  getParameters(): JoinGameParams {
+    return this.params;
+  }
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(0, [DataBytes.fromString(this.params.playerTwoPubKeyHash)]);
+  }
+}
+
+export class MakeMoveCommand implements GameActionCommandInterface<GameAction, MakeMoveParams>, ToRedeemerScriptData {
+  constructor(private gameState: GameState, private params: MakeMoveParams) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameAction {
+    return GameAction.MAKE_MOVE;
+  }
+  getParameters(): MakeMoveParams {
+    return this.params;
+  }
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(1, [DataBytes.fromString(this.params.playerPubKeyHash), this.params.move.toScriptData()]);
+  }
+}
+
+export class ClaimWinCommand implements GameActionCommandInterface<GameEndAction, void>, ToRedeemerScriptData {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameEndAction {
+    return GameEndAction.CLAIM_WIN;
+  }
+  getParameters(): void {}
+
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(2, []);
+  }
+}
+
+export class ClaimTieCommand implements GameActionCommandInterface<GameEndAction, void>, ToRedeemerScriptData {
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameEndAction {
+    return GameEndAction.CLAIM_TIE;
+  }
+  getParameters(): void {}
+
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(3, []);
+  }
+}
+
+export class CancelInitiatedGameCommand
+  implements GameActionCommandInterface<GameEndAction, void>, ToRedeemerScriptData
+{
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameEndAction {
+    return GameEndAction.CANCEL_INITIATED_GAME;
+  }
+  getParameters(): void {}
+
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(4, []);
+  }
+}
+
+export class CancelInProgressGameCommand
+  implements GameActionCommandInterface<GameEndAction, void>, ToRedeemerScriptData
+{
+  constructor(private gameState: GameState) {}
+  getGameState(): GameState {
+    return this.gameState;
+  }
+  getAction(): GameEndAction {
+    return GameEndAction.CANCEL_IN_PROGRESS_GAME;
+  }
+  getParameters(): void {}
+
+  toRedeemerScriptData(): Data {
+    return DataConstr.from(5, []);
+  }
+}
+
+export type GameActionCommand = StartGameCommand | JoinGameCommand | MakeMoveCommand;
+
+export type EndGameActionCommand =
+  | ClaimWinCommand
+  | ClaimTieCommand
+  | CancelInitiatedGameCommand
+  | CancelInProgressGameCommand;
 
 export class StartGameParams {
   constructor(
