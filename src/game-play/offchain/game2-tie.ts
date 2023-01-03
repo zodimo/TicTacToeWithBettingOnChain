@@ -8,7 +8,14 @@ import {
   StartGameParams,
   MakeMoveParams,
 } from "../../app/game-data.js";
-import { Game, GamePayOut } from "../../app/game.js";
+import {
+  ClaimTieCommand,
+  Game,
+  GamePayOut,
+  JoinGameCommand,
+  MakeMoveCommand,
+  StartGameCommand,
+} from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
 /**
@@ -18,12 +25,8 @@ import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 // TX 1
 const playerOneAddress = "Player1Address";
 const startGameParams = new StartGameParams(playerOneAddress, 50, 30);
-
-const tx1: (startGameParams: StartGameParams) => GameState = (startGameParams) => {
-  return Game.startGame(startGameParams).gameState;
-};
-
-const tx1GameState = tx1(startGameParams);
+const tx1Command = new StartGameCommand(startGameParams);
+const tx1GameState = Game.handleActionCommand(tx1Command);
 const tx1GameStateAsScriptData = tx1GameState.toScriptData();
 console.log("##########################");
 console.log(`tx1 [${tx1GameState.constructor.name}]: ${JSON.stringify(tx1GameState, null, 2)}`);
@@ -39,11 +42,10 @@ console.log(
 const playerTwoAddress = "Player2Address";
 const joinGameParams = new JoinGameParams(playerTwoAddress);
 
-const tx2: (gameState: GameState, joinGameParams: JoinGameParams) => GameState = (gamestate, joinGameParams) => {
-  return Game.loadGame(gamestate).joinGame(joinGameParams).gameState;
-};
+//gamestate from scriptData
 const tx1GameStateFromScriptData = new GameStateFactory().fromScriptData(tx1GameStateAsScriptData);
-const tx2GameState = tx2(tx1GameStateFromScriptData, joinGameParams);
+const tx2Command = new JoinGameCommand(tx1GameStateFromScriptData, joinGameParams);
+const tx2GameState = Game.handleActionCommand(tx2Command);
 const tx2GameStateAsScriptData = tx2GameState.toScriptData();
 console.log("##########################");
 console.log(`tx2 [${tx2GameState.constructor.name}]: ${JSON.stringify(tx2GameState, null, 2)}`);
@@ -64,12 +66,9 @@ console.log(
 
 const move1 = new Move(Row.ROW_A, Column.Col_1);
 const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
-const tx3: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  //Make first move
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
 const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(tx2GameStateAsScriptData);
-const tx3GameState = tx3(tx2GameStateFromScriptData, makeMoveParams1);
+const tx3Command = new MakeMoveCommand(tx2GameStateFromScriptData, makeMoveParams1);
+const tx3GameState = Game.handleActionCommand(tx3Command);
 const tx3GameStateAsScriptData = tx3GameState.toScriptData();
 console.log("##########################");
 console.log(`tx3 [${tx3GameState.constructor.name}]: ${JSON.stringify(tx3GameState, null, 2)}`);
@@ -91,12 +90,9 @@ console.log(
 
 const move2 = new Move(Row.ROW_B, Column.Col_2);
 const makeMoveParams2 = new MakeMoveParams(playerOneAddress, move2);
-const tx4: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
-
 const tx3GameStateFromScriptData = new GameStateFactory().fromScriptData(tx3GameStateAsScriptData);
-const tx4GameState = tx4(tx3GameStateFromScriptData, makeMoveParams2);
+const tx4Command = new MakeMoveCommand(tx3GameStateFromScriptData, makeMoveParams2);
+const tx4GameState = Game.handleActionCommand(tx4Command);
 const tx4GameStateAsScriptData = tx4GameState.toScriptData();
 console.log("##########################");
 console.log(`tx4 [${tx4GameState.constructor.name}]: ${JSON.stringify(tx4GameState, null, 2)}`);
@@ -104,7 +100,7 @@ console.log(
   `tx4 scriptdata : ${tx4GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
 );
 
-///////////////////////////////////////////////
+// ///////////////////////////////////////////////
 //      ONLY ScriptData crosses the line
 //////////////////////////////////////////////
 
@@ -117,12 +113,9 @@ console.log(
 
 const move3 = new Move(Row.ROW_A, Column.Col_2);
 const makeMoveParams3 = new MakeMoveParams(playerTwoAddress, move3);
-const tx5: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
-
 const tx4GameStateFromScriptData = new GameStateFactory().fromScriptData(tx4GameStateAsScriptData);
-const tx5GameState = tx5(tx4GameStateFromScriptData, makeMoveParams3);
+const tx5Command = new MakeMoveCommand(tx4GameStateFromScriptData, makeMoveParams3);
+const tx5GameState = Game.handleActionCommand(tx5Command);
 const tx5GameStateAsScriptData = tx5GameState.toScriptData();
 console.log("##########################");
 console.log(`tx5 [${tx5GameState.constructor.name}]: ${JSON.stringify(tx5GameState, null, 2)}`);
@@ -143,12 +136,9 @@ console.log(
 
 const move4 = new Move(Row.ROW_B, Column.Col_3);
 const makeMoveParams4 = new MakeMoveParams(playerOneAddress, move4);
-const tx6: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
-
 const tx5GameStateFromScriptData = new GameStateFactory().fromScriptData(tx5GameStateAsScriptData);
-const tx6GameState = tx6(tx5GameStateFromScriptData, makeMoveParams4);
+const tx6Command = new MakeMoveCommand(tx5GameStateFromScriptData, makeMoveParams4);
+const tx6GameState = Game.handleActionCommand(tx6Command);
 const tx6GameStateAsScriptData = tx6GameState.toScriptData();
 console.log("##########################");
 console.log(`tx6 [${tx6GameState.constructor.name}]: ${JSON.stringify(tx6GameState, null, 2)}`);
@@ -169,12 +159,9 @@ console.log(
 
 const move5 = new Move(Row.ROW_B, Column.Col_1);
 const makeMoveParams5 = new MakeMoveParams(playerTwoAddress, move5);
-const tx7: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
-
 const tx6GameStateFromScriptData = new GameStateFactory().fromScriptData(tx6GameStateAsScriptData);
-const tx7GameState = tx7(tx6GameStateFromScriptData, makeMoveParams5);
+const tx7Command = new MakeMoveCommand(tx6GameStateFromScriptData, makeMoveParams5);
+const tx7GameState = Game.handleActionCommand(tx7Command);
 const tx7GameStateAsScriptData = tx7GameState.toScriptData();
 console.log("##########################");
 console.log(`tx7 [${tx7GameState.constructor.name}]: ${JSON.stringify(tx7GameState, null, 2)}`);
@@ -195,12 +182,9 @@ console.log(
 
 const move6 = new Move(Row.ROW_A, Column.Col_3);
 const makeMoveParams6 = new MakeMoveParams(playerOneAddress, move6);
-const tx8: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-  return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-};
-
 const tx7GameStateFromScriptData = new GameStateFactory().fromScriptData(tx7GameStateAsScriptData);
-const tx8GameState = tx8(tx7GameStateFromScriptData, makeMoveParams6);
+const tx8Command = new MakeMoveCommand(tx7GameStateFromScriptData, makeMoveParams6);
+const tx8GameState = Game.handleActionCommand(tx8Command);
 const tx8GameStateAsScriptData = tx8GameState.toScriptData();
 console.log("##########################");
 console.log(`tx8 [${tx8GameState.constructor.name}]: ${JSON.stringify(tx8GameState, null, 2)}`);
@@ -213,9 +197,8 @@ console.log(
 //////////////////////////////////////////////
 
 const tx8GameStateFromScriptData = new GameStateFactory().fromScriptData(tx8GameStateAsScriptData);
-const tx9: (gameState: GameState) => GamePayOut = (gamestate) => {
-  return Game.loadGame(gamestate).claimTie();
-};
+const tx9Command = new ClaimTieCommand(tx8GameStateFromScriptData);
+const payout = Game.handleEndGameActionCommand(tx9Command);
 // TX 9 Claim Tie
 console.log("##########################");
-console.log(tx9(tx8GameStateFromScriptData));
+console.log(payout);
