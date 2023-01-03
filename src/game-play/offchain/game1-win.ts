@@ -1,6 +1,5 @@
 import {
   Column,
-  GameState,
   GameStateFactory,
   Move,
   Row,
@@ -11,7 +10,6 @@ import {
 import {
   ClaimWinCommand,
   Game,
-  GamePayOut,
   JoinGameCommand,
   MakeMoveCommand,
   StartGameCommand,
