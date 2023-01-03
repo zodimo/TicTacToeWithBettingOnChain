@@ -9,6 +9,30 @@ import {
   ToScriptDataSerialise,
 } from "../cardano-cli/script-data.js";
 
+/**
+ * REDEEMERS
+ */
+
+export class StartGameParams {
+  constructor(
+    public readonly playerOnePubKeyHash: string,
+    public readonly betInAda: number,
+    public readonly gameMaxIntervalInSeconds: number
+  ) {}
+}
+
+export class JoinGameParams {
+  constructor(public readonly playerTwoPubKeyHash: string) {}
+}
+
+export class MakeMoveParams {
+  constructor(public readonly playerPubKeyHash: string, public readonly move: Move) {}
+}
+
+/**
+ * DATUMS
+ */
+
 export enum Row {
   ROW_A = "A", //constuctor 0
   ROW_B = "B", //constuctor 1
@@ -114,7 +138,7 @@ enum GameStateConstuctors {
 
 export class GameInitiated implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOneAddress: string,
+    public readonly playerOnePubKeyHash: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number
@@ -122,7 +146,7 @@ export class GameInitiated implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameInitiated, [
-      DataBytes.fromString(this.playerOneAddress),
+      DataBytes.fromString(this.playerOnePubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
@@ -137,8 +161,8 @@ export class GameInitiated implements ToScriptDataSerialise {
 
 export class GameStarted implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
+    public readonly playerOnePubKeyHash: string,
+    public readonly playerTwoPubKeyHash: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
@@ -146,8 +170,8 @@ export class GameStarted implements ToScriptDataSerialise {
   ) {}
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameStarted, [
-      DataBytes.fromString(this.playerOneAddress),
-      DataBytes.fromString(this.playerTwoAddress),
+      DataBytes.fromString(this.playerOnePubKeyHash),
+      DataBytes.fromString(this.playerTwoPubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
@@ -162,8 +186,8 @@ export class GameStarted implements ToScriptDataSerialise {
 
 export class GameInProgress implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
+    public readonly playerOnePubKeyHash: string,
+    public readonly playerTwoPubKeyHash: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
@@ -173,8 +197,8 @@ export class GameInProgress implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameInProgress, [
-      DataBytes.fromString(this.playerOneAddress),
-      DataBytes.fromString(this.playerTwoAddress),
+      DataBytes.fromString(this.playerOnePubKeyHash),
+      DataBytes.fromString(this.playerTwoPubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
@@ -190,8 +214,8 @@ export class GameInProgress implements ToScriptDataSerialise {
 
 export class GameIsWon implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
+    public readonly playerOnePubKeyHash: string,
+    public readonly playerTwoPubKeyHash: string,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
@@ -201,8 +225,8 @@ export class GameIsWon implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameIsWon, [
-      DataBytes.fromString(this.playerOneAddress),
-      DataBytes.fromString(this.playerTwoAddress),
+      DataBytes.fromString(this.playerOnePubKeyHash),
+      DataBytes.fromString(this.playerTwoPubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
@@ -214,8 +238,8 @@ export class GameIsWon implements ToScriptDataSerialise {
 
 export class GameIsTied implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOneAddress: string,
-    public readonly playerTwoAddress: string,
+    public readonly playerOnePubKeyHash: string,
+    public readonly playerTwoPubKeyHash: string,
     public readonly betInAda: number,
     public readonly occurredAtPosixTime: number,
     public readonly moves: Moves
@@ -223,8 +247,8 @@ export class GameIsTied implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameIsTied, [
-      DataBytes.fromString(this.playerOneAddress),
-      DataBytes.fromString(this.playerTwoAddress),
+      DataBytes.fromString(this.playerOnePubKeyHash),
+      DataBytes.fromString(this.playerTwoPubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       this.moves.toScriptData(),
@@ -357,7 +381,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   createGameInitiated(data: DataConstr): GameInitiated {
     assert.equal(data.getFields().length, 4, `GameInitiated: Extects 4 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[1] as DataNumber;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
@@ -366,7 +390,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const occurredAtPosixTimeData: DataNumber = data.getFields()[3] as DataNumber;
 
     return new GameInitiated(
-      playerOneAddressData.toString(),
+      playerOnePubKeyHashData.toString(),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue()
@@ -376,9 +400,9 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   createGameStarted(data: DataConstr): GameStarted {
     assert.equal(data.getFields().length, 6, `GameStarted: Extects 6 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    const playerTwoPubKeyHashData: DataBytes = data.getFields()[1] as DataBytes;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
@@ -389,8 +413,8 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const playerAddressToMakeMoveData: DataBytes = data.getFields()[5] as DataBytes;
 
     return new GameStarted(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
+      playerOnePubKeyHashData.toString(),
+      playerTwoPubKeyHashData.toString(),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
@@ -401,9 +425,9 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   createGameInProgress(data: DataConstr): GameInProgress {
     assert.equal(data.getFields().length, 7, `GameInProgress: Extects 7 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    const playerTwoPubKeyHashData: DataBytes = data.getFields()[1] as DataBytes;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
@@ -421,8 +445,8 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[6] as DataConstr;
 
     return new GameInProgress(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
+      playerOnePubKeyHashData.toString(),
+      playerTwoPubKeyHashData.toString(),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
@@ -434,9 +458,9 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   createGameIsWon(data: DataConstr): GameIsWon {
     assert.equal(data.getFields().length, 7, `GameIsWon: Extects 7 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    const playerTwoPubKeyHashData: DataBytes = data.getFields()[1] as DataBytes;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
@@ -454,8 +478,8 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[6] as DataConstr;
 
     return new GameIsWon(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
+      playerOnePubKeyHashData.toString(),
+      playerTwoPubKeyHashData.toString(),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
@@ -467,9 +491,9 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
   createGameIsTied(data: DataConstr): GameIsTied {
     assert.equal(data.getFields().length, 5, `GameIsTied: Extects 5 fields got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOneAddressData: DataBytes = data.getFields()[0] as DataBytes;
+    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
     assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoAddressData: DataBytes = data.getFields()[1] as DataBytes;
+    const playerTwoPubKeyHashData: DataBytes = data.getFields()[1] as DataBytes;
     assert.equal(data.getFields()[2] instanceof DataNumber, true);
     const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
     assert.equal(data.getFields()[3] instanceof DataNumber, true);
@@ -483,8 +507,8 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[4] as DataConstr;
 
     return new GameIsTied(
-      playerOneAddressData.toString(),
-      playerTwoAddressData.toString(),
+      playerOnePubKeyHashData.toString(),
+      playerTwoPubKeyHashData.toString(),
       betInAdaData.getValue(),
       occurredAtPosixTimeData.getValue(),
       new MovesFactory().fromScriptData(movesData)

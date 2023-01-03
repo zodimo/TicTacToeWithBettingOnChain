@@ -15,26 +15,15 @@ import {
   GameIsWon,
   GameStarted,
   GameState,
+  JoinGameParams,
+  MakeMoveParams,
   Move,
   Moves,
   Row,
+  StartGameParams,
 } from "./game-data.js";
 
-export class StartGameParams {
-  constructor(
-    public readonly playerOneAddress: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInSeconds: number
-  ) {}
-}
 
-export class JoinGameParams {
-  constructor(public readonly playerTwoAddress: string) {}
-}
-
-export class MakeMoveParams {
-  constructor(public readonly playerAddress: string, public readonly move: Move) {}
-}
 
 export class Game {
   private constructor(public readonly gameState: GameState) {}
@@ -44,7 +33,7 @@ export class Game {
     const postixTimeNow = +Date.now().toString();
 
     const gameState = new GameInitiated(
-      params.playerOneAddress,
+      params.playerOnePubKeyHash,
       params.betInAda,
       params.gameMaxIntervalInSeconds,
       postixTimeNow
@@ -59,14 +48,14 @@ export class Game {
   joinGame(params: JoinGameParams): Game {
     assert.equal(this.gameState instanceof GameInitiated, true);
     const currentGamestate: GameInitiated = this.gameState as GameInitiated;
-    const playerTwoAddress = params.playerTwoAddress;
+    const playerTwoPubKeyHash = params.playerTwoPubKeyHash;
     //randomize which player to start;
-    const playerAddressToMakeMove = playerTwoAddress;
+    const playerAddressToMakeMove = playerTwoPubKeyHash;
     const postixTimeNow = +Date.now().toString();
 
     const gameState = new GameStarted(
-      currentGamestate.playerOneAddress,
-      params.playerTwoAddress,
+      currentGamestate.playerOnePubKeyHash,
+      params.playerTwoPubKeyHash,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
@@ -83,12 +72,12 @@ export class Game {
       `Game must be Started!, current state: ${this.gameState.constructor.name}`
     );
     const currentGamestate: GameStarted = this.gameState as GameStarted;
-    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerAddress, true, "Wrong player playing now!");
+    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash, true, "Wrong player playing now!");
 
     // select other player to play next.
-    let playerAddressToMakeMove = currentGamestate.playerOneAddress;
+    let playerAddressToMakeMove = currentGamestate.playerOnePubKeyHash;
     if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
-      playerAddressToMakeMove = currentGamestate.playerTwoAddress;
+      playerAddressToMakeMove = currentGamestate.playerTwoPubKeyHash;
     }
 
     const postixTimeNow = +Date.now().toString();
@@ -96,13 +85,13 @@ export class Game {
     const move = Moves.initialise();
 
     const gameState = new GameInProgress(
-      currentGamestate.playerOneAddress,
-      currentGamestate.playerTwoAddress,
+      currentGamestate.playerOnePubKeyHash,
+      currentGamestate.playerTwoPubKeyHash,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
       playerAddressToMakeMove,
-      move.makeMove(params.playerAddress, params.move)
+      move.makeMove(params.playerPubKeyHash, params.move)
     );
     return new Game(gameState);
   }
@@ -115,44 +104,44 @@ export class Game {
     );
 
     const currentGamestate: GameInProgress = this.gameState as GameInProgress;
-    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerAddress, true, "Wrong player playing now!");
+    assert.equal(currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash, true, "Wrong player playing now!");
 
     // select other player to play next.
-    let playerAddressToMakeMove = currentGamestate.playerOneAddress;
+    let playerAddressToMakeMove = currentGamestate.playerOnePubKeyHash;
     if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
-      playerAddressToMakeMove = currentGamestate.playerTwoAddress;
+      playerAddressToMakeMove = currentGamestate.playerTwoPubKeyHash;
     }
 
     this.assertGameIsPlayable(currentGamestate.moves);
 
     const currentMoves = currentGamestate.moves;
-    const newMoves = currentMoves.makeMove(params.playerAddress, params.move);
+    const newMoves = currentMoves.makeMove(params.playerPubKeyHash, params.move);
     const postixTimeNow = +Date.now().toString();
 
     let gameState: GameState;
 
     if (this.isGameWon(newMoves)) {
       gameState = new GameIsWon(
-        currentGamestate.playerOneAddress,
-        currentGamestate.playerTwoAddress,
+        currentGamestate.playerOnePubKeyHash,
+        currentGamestate.playerTwoPubKeyHash,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
-        params.playerAddress, //winning player address
+        params.playerPubKeyHash, //winning player address
         newMoves
       );
     } else if (this.isGameTied(newMoves)) {
       gameState = new GameIsTied(
-        currentGamestate.playerOneAddress,
-        currentGamestate.playerTwoAddress,
+        currentGamestate.playerOnePubKeyHash,
+        currentGamestate.playerTwoPubKeyHash,
         currentGamestate.betInAda,
         postixTimeNow,
         newMoves
       );
     } else {
       gameState = new GameInProgress(
-        currentGamestate.playerOneAddress,
-        currentGamestate.playerTwoAddress,
+        currentGamestate.playerOnePubKeyHash,
+        currentGamestate.playerTwoPubKeyHash,
         currentGamestate.betInAda,
         currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
@@ -195,9 +184,9 @@ export class Game {
       "Expected Game to have reached its timeout!"
     );
 
-    let winnerByTimout = knownGameState.playerOneAddress;
+    let winnerByTimout = knownGameState.playerOnePubKeyHash;
     if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
-      winnerByTimout = knownGameState.playerTwoAddress;
+      winnerByTimout = knownGameState.playerTwoPubKeyHash;
     }
 
     console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to respond.`);
@@ -220,9 +209,9 @@ export class Game {
       "Expected Game to have reached its timeout!"
     );
 
-    let winnerByTimout = knownGameState.playerOneAddress;
+    let winnerByTimout = knownGameState.playerOnePubKeyHash;
     if (knownGameState.playerAddressToMakeMove == winnerByTimout) {
-      winnerByTimout = knownGameState.playerTwoAddress;
+      winnerByTimout = knownGameState.playerTwoPubKeyHash;
     }
 
     console.log(`Player ${knownGameState.playerAddressToMakeMove} has failed to repond.`);
@@ -254,8 +243,8 @@ export class Game {
     );
     const currentGamestate: GameIsTied = this.gameState as GameIsTied;
     console.log("Game is Tied, return player bets.");
-    console.log(`player : ${currentGamestate.playerOneAddress} ${currentGamestate.betInAda} Ada returned`);
-    console.log(`player : ${currentGamestate.playerTwoAddress} ${currentGamestate.betInAda} Ada returned`);
+    console.log(`player : ${currentGamestate.playerOnePubKeyHash} ${currentGamestate.betInAda} Ada returned`);
+    console.log(`player : ${currentGamestate.playerTwoPubKeyHash} ${currentGamestate.betInAda} Ada returned`);
   }
   claimTimeOut() {
     throw new Error("Not yet implemented!!");
