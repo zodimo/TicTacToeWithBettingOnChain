@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeOperators       #-}  --Allow the use and definition of types with operator names
 {-# LANGUAGE OverloadedStrings   #-}  --Allow string to be used for bytestring
 
-module Untyped where
+module UntypedAlwaysSucceed where
 
 --PlutusTx 
 import           PlutusTx                       (Data (..))

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications  #-}
 
-module DeployUntyped
+module DeployUntypedAlwaysSucceed
     ( writeUnit
     , writeTicTacToeValidator
     ) where
@@ -16,7 +16,7 @@ import           PlutusTx              (Data (..))
 import qualified PlutusTx
 import qualified Ledger
 
-import           Untyped
+import           UntypedAlwaysSucceed
 
 dataToScriptData :: Data -> ScriptData
 dataToScriptData (Constr n xs) = ScriptDataConstructor n $ dataToScriptData <$> xs
