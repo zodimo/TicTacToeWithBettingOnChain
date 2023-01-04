@@ -513,6 +513,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       case GameStateConstuctors.GameInitiated:
         return this.createGameInitiated(validData);
 
+      //@deprecated
       case GameStateConstuctors.GameStarted:
         return this.createGameStarted(validData);
 
