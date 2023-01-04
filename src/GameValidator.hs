@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies        #-}  --Allow use and definition of indexed type and data families
 {-# LANGUAGE TypeOperators       #-}  --Allow the use and definition of types with operator names
 {-# LANGUAGE OverloadedStrings   #-}  --Allow string to be used for bytestring
+{-# LANGUAGE RecordWildCards     #-}
 
 module GameValidator where
 
@@ -132,7 +133,48 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
 mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
-mkValidator _ _ _ = True
+mkValidator gameState actionCommand _ =  validActionForState gameState actionCommand
+
+-- helper functions.
+
+-- only certain combinations are allowed.
+
+validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+validActionForState gs command = 
+    case gs of
+        GameInitiated {..}   -> case command of
+                                JoinGameCommand {..}        -> True
+                                CancelInitiatedGameCommand  -> True
+                                otherwise                   -> False
+        GameInProgress {..} -> case command of
+                                MakeMoveCommand {..}        -> True
+                                CancelInProgressGameCommand -> True
+                                otherwise                   -> False
+        GameIsWon {..}      -> case command of
+                                ClaimWinCommand             -> True
+                                otherwise                   -> False
+        GameIsTied {..}     -> case command of
+                                ClaimWinCommand             -> True
+                                otherwise                   -> False
+        
+
+
+{- 
+This section is where the logic of the game will be duplicated from the dapp.
+duplicated ? frontend and backend validation.
+
+each transaction has 3 things, input/inline datum
+
+    Datum and redeemer combination = transition
+
+    GameInitiated + joinGame  = GameInProgress
+    GameInProgress + MakeMoveCommand = GameInProgress || GameIsWon || GameIsTied
+    GameIsWon  + ClaimWinCommand  = The end
+    GameIsTied + ClaimTieCommand  = The end
+    GameInitiated + CancelInitiatedGameCommand = the end
+    GameInProgress + CancelInProgressGameCommand = the end
+
+-}
 
 
 
@@ -141,10 +183,6 @@ instance Scripts.ValidatorTypes Game where
     -- type instance DatumType Game = GameStateDatum
     type instance DatumType Game = GameStateDatum
     type instance RedeemerType Game = GameActionCommandRedeemer
-
-
--- helper functions.
-
 
 
 typedValidator :: Scripts.TypedValidator Game
