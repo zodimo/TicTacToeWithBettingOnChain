@@ -12,8 +12,12 @@ export const getScriptFile = () => {
   return __dirname + "/../testnet/ticTacToe.plutus";
 };
 
-export const getUntypedScriptFile = () => {
-  return __dirname + "/../testnet/untyped.plutus";
+export const getUntypedAlwaysSucceedScriptFile = () => {
+  return __dirname + "/../testnet/untyped-always-succeed.plutus";
+};
+
+export const getTypedAlwaysSucceedScriptFile = () => {
+  return __dirname + "/../testnet/typed-always-succeed.plutus";
 };
 
 export const getScriptAddress = () => {
@@ -26,11 +30,20 @@ export const getScriptAddress = () => {
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
 
-export const getUntypedScriptAddress = () => {
-  const scriptWalletName = "untyped";
+export const getUntypedAlwaysSucceedScriptAddress = () => {
+  const scriptWalletName = "untyped-always-succeed";
   cardanoCli.paymentAddressBuild(
     scriptWalletName,
-    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getUntypedScriptFile()))
+    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getUntypedAlwaysSucceedScriptFile()))
+  );
+  return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
+};
+
+export const getTypedAlwaysSucceedScriptAddress = () => {
+  const scriptWalletName = "typed-always-succeed";
+  cardanoCli.paymentAddressBuild(
+    scriptWalletName,
+    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getUntypedAlwaysSucceedScriptFile()))
   );
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
