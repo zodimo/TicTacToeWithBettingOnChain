@@ -125,70 +125,78 @@ mkValidator gameState actionCommand ctx =  traceIfFalse "Invalid Command for Gam
 -- only certain combinations are allowed.
 {-# INLINABLE validActionForState #-}
 validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validActionForState gs command _ = 
+validActionForState gs command ctx = 
     case gs of
-        GameInitiated {}  -> validGameInitiatedCommand command
-        GameInProgress {} -> validGameInProgress command
-        GameIsWon {}      -> validGameIsWonCommand command
-        GameIsTied {}     -> validGameIsTiedCommand command
+        GameInitiated {}  -> validGameInitiatedCommand gs command ctx
+        GameInProgress {} -> validGameInProgress gs command ctx
+        GameIsWon {}      -> validGameIsWonCommand gs command ctx
+        GameIsTied {}     -> validGameIsTiedCommand gs command ctx
         
 {-# INLINABLE validGameInitiatedCommand #-}
-validGameInitiatedCommand :: GameActionCommandRedeemer -> Bool
-validGameInitiatedCommand command = case command of
-                                JoinGameCommand {}          -> True
-                                CancelInitiatedGameCommand  -> True
+validGameInitiatedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validGameInitiatedCommand gs command ctx = case command of
+                                JoinGameCommand {}          -> canJoinGame gs command ctx
+                                CancelInitiatedGameCommand  -> canCancelInitiatedGame gs command ctx
                                 _                           -> False
                                 
 {-# INLINABLE validGameInProgress #-}
-validGameInProgress :: GameActionCommandRedeemer -> Bool
-validGameInProgress command = case command of
-                                MakeMoveCommand {}          -> True
-                                CancelInProgressGameCommand -> True
+validGameInProgress :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validGameInProgress gs command ctx = case command of
+                                MakeMoveCommand {}          -> canMakeMove gs command ctx
+                                CancelInProgressGameCommand -> canCancelInProgressGame gs command ctx
                                 _                           -> False
 
 {-# INLINABLE validGameIsWonCommand #-}
-validGameIsWonCommand :: GameActionCommandRedeemer -> Bool
-validGameIsWonCommand command = case command of
-                                ClaimWinCommand             -> True
+validGameIsWonCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validGameIsWonCommand gs command ctx = case command of
+                                ClaimWinCommand             -> canClaimWin gs command ctx
                                 _                           -> False
 
 {-# INLINABLE validGameIsTiedCommand #-}
-validGameIsTiedCommand :: GameActionCommandRedeemer -> Bool
-validGameIsTiedCommand command = case command of
-                                ClaimTieCommand             -> True
+validGameIsTiedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validGameIsTiedCommand gs command ctx = case command of
+                                ClaimTieCommand             -> canClaimTie gs command ctx
                                 _                           -> False
+
+{- LETS GET TO BUSINESS -}
 
 -- match bet in value
 -- need access to txInfo
 -- output to script must batch the bet
-canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canJoinGame _ _ = True
+{-# INLINABLE canJoinGame #-}
+canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canJoinGame _ _ _ = True
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output goes back to original wallet
-canCancelInitiatedGame:: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canCancelInitiatedGame _ _ = True
+{-# INLINABLE canCancelInitiatedGame #-}
+canCancelInitiatedGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canCancelInitiatedGame _ _ _ = True
 
 -- move not made before
 -- validate output
 -- output is still in progress, or won , or tied
-canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canMakeMove _ _ = True
+{-# INLINABLE canMakeMove #-}
+canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canMakeMove _ _ _ = True
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output , the winner is the player who is waiting for the other player to play
-canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canCancelInProgressGame _ _ = True
+{-# INLINABLE canCancelInProgressGame #-}
+canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canCancelInProgressGame _ _ _ = True
 
 -- validate output
 -- value goes to winner
-canClaimWin :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canClaimWin _ _ = True
+{-# INLINABLE canClaimWin #-}
+canClaimWin :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canClaimWin _ _ _ = True
 
 -- validate output
 -- value is split evenly
-canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-canClaimTie _ _ = True
+{-# INLINABLE canClaimTie #-}
+canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+canClaimTie _ _ _ = True
 
 
 {- 
