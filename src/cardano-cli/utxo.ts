@@ -1,24 +1,15 @@
 import { UtxoId } from "./utxo-id.js";
 
 export class UtxoNativeAsset {
-  constructor(
-    public readonly policyId: string,
-    public readonly assetName: string,
-    public readonly quantity: number
-  ) {}
+  constructor(public readonly policyId: string, public readonly assetName: string, public readonly quantity: number) {}
 
   getFullName(): string {
     return `${this.policyId}.${this.assetName}`;
   }
 }
 
-
-
 export class UtxoValue {
-  constructor(
-    public readonly lovelace: number,
-    public readonly nativeAssets: UtxoNativeAsset[]
-  ) {
+  constructor(public readonly lovelace: number, public readonly nativeAssets: UtxoNativeAsset[]) {
     // { lovelace: 9389640398 }
   }
 }
@@ -78,6 +69,7 @@ export class UtxoStack {
       if (utxo.id.equals(utxoId)) {
         return true;
       }
+      return false;
     });
 
     return !!foundUtxo;

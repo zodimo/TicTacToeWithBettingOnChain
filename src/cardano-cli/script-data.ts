@@ -167,15 +167,15 @@ export class DataConstr extends ScriptData {
 export const fromJson: (json: string) => Data = (json) => {
   const fromJsonObject: (jsonObject: any) => Data = (jsonObject) => {
     //bytes
-    if (jsonObject.hasOwnProperty("bytes")) {
+    if ("bytes" in jsonObject) {
       return DataBytes.fromHexString(jsonObject.bytes);
     }
     //int
-    if (jsonObject.hasOwnProperty("int")) {
+    if ("int" in jsonObject) {
       return new DataNumber(jsonObject.int);
     }
     //list
-    if (jsonObject.hasOwnProperty("list")) {
+    if ("list" in jsonObject) {
       const values = new Array();
       if (jsonObject.list) {
         jsonObject.list.forEach((data: any) => {
@@ -185,7 +185,7 @@ export const fromJson: (json: string) => Data = (json) => {
       return new DataArray(values);
     }
     //map
-    if (jsonObject.hasOwnProperty("map")) {
+    if ("map" in jsonObject) {
       const map = new Map();
       for (const [key, value] of jsonObject.map.entries()) {
         map.set(fromJsonObject(key), fromJsonObject(value));
@@ -193,14 +193,14 @@ export const fromJson: (json: string) => Data = (json) => {
       return new DataMap(map);
     }
     //constuctor
-    if (jsonObject.hasOwnProperty("constructor") && jsonObject.hasOwnProperty("fields")) {
+    if ("constructor" in jsonObject && "fields" in jsonObject) {
       const dataFields: Data[] = [];
       if (jsonObject.fields) {
         jsonObject.fields.forEach((data: any) => {
           dataFields.push(fromJsonObject(data));
         });
       }
-      const constuctorIndex = +scriptDataJson["constructor"];
+      const constuctorIndex = +jsonObject["constructor"];
 
       return new DataConstr(constuctorIndex, dataFields);
     }
