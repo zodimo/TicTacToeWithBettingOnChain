@@ -65,13 +65,6 @@ data GameStateDatum = GameInitiated
     , giBetInAda                    :: Integer
     , giGameMaxIntervalInSeconds    :: Integer
     , giOccurredAtPosixTime         :: Integer
-    } | GameStarted 
-    { gsPlayerOnePubKeyHash         :: BuiltinByteString
-    , gsPlayerTwoPubKeyHash         :: BuiltinByteString
-    , gsBetInAda                    :: Integer
-    , gsGameMaxIntervalInSeconds    :: Integer
-    , gsOccurredAtPosixTime         :: Integer
-    , gsPlayerAddressToMakeMove     :: BuiltinByteString
     } | GameInProgress
     { gipPlayerOnePubKeyHash        :: BuiltinByteString
     , gipPlayerTwoPubKeyHash        :: BuiltinByteString
@@ -97,7 +90,7 @@ data GameStateDatum = GameInitiated
     } deriving (Show)
 
 -- template haskell to make instance of data for custom datatypes.
-PlutusTx.makeIsDataIndexed ''GameStateDatum [('GameInitiated, 0), ('GameStarted, 1), ('GameInProgress, 2), ('GameIsWon, 3), ('GameIsTied, 4)]
+PlutusTx.makeIsDataIndexed ''GameStateDatum [('GameInitiated, 0), ('GameInProgress, 1), ('GameIsWon, 2), ('GameIsTied, 3)]
 
 -- Custom DataTypes for Redeemers
 
@@ -148,7 +141,6 @@ validActionForState gs command =
         GameIsTied {}     -> case command of
                                 ClaimTieCommand             -> True
                                 _                           -> False
-        _                 -> False
         
 -- match bet in value
 -- need access to txInfo

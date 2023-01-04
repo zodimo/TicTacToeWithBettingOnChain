@@ -281,10 +281,9 @@ export class MoveMade implements ToScriptDataSerialise {
 
 enum GameStateConstuctors {
   GameInitiated = 0,
-  GameStarted = 1,
-  GameInProgress = 2,
-  GameIsWon = 3,
-  GameIsTied = 4,
+  GameInProgress = 1,
+  GameIsWon = 2,
+  GameIsTied = 3,
 }
 
 export class GameInitiated implements ToScriptDataSerialise {
@@ -304,31 +303,6 @@ export class GameInitiated implements ToScriptDataSerialise {
     ]);
   }
 
-  expiresAtPosixTime(): number {
-    const gameMaxIntervalInMillis = this.gameMaxIntervalInSeconds * 1000;
-    return this.occurredAtPosixTime + gameMaxIntervalInMillis;
-  }
-}
-
-export class GameStarted implements ToScriptDataSerialise {
-  constructor(
-    public readonly playerOnePubKeyHash: string,
-    public readonly playerTwoPubKeyHash: string,
-    public readonly betInAda: number,
-    public readonly gameMaxIntervalInSeconds: number,
-    public readonly occurredAtPosixTime: number,
-    public readonly playerAddressToMakeMove: string
-  ) {}
-  toScriptData(): Data {
-    return DataConstr.from(GameStateConstuctors.GameStarted, [
-      DataBytes.fromString(this.playerOnePubKeyHash),
-      DataBytes.fromString(this.playerTwoPubKeyHash),
-      DataNumber.fromNumber(this.betInAda),
-      DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
-      DataNumber.fromNumber(this.occurredAtPosixTime),
-      DataBytes.fromString(this.playerAddressToMakeMove),
-    ]);
-  }
   expiresAtPosixTime(): number {
     const gameMaxIntervalInMillis = this.gameMaxIntervalInSeconds * 1000;
     return this.occurredAtPosixTime + gameMaxIntervalInMillis;
@@ -407,7 +381,7 @@ export class GameIsTied implements ToScriptDataSerialise {
   }
 }
 
-export type GameState = GameInitiated | GameStarted | GameInProgress | GameIsWon | GameIsTied;
+export type GameState = GameInitiated | GameInProgress | GameIsWon | GameIsTied;
 
 ///////////////////////////////////////
 //
@@ -513,11 +487,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       case GameStateConstuctors.GameInitiated:
         return this.createGameInitiated(validData);
 
-      //@deprecated
-      case GameStateConstuctors.GameStarted:
-        return this.createGameStarted(validData);
-
-      case GameStateConstuctors.GameInProgress:
+        case GameStateConstuctors.GameInProgress:
         return this.createGameInProgress(validData);
 
       case GameStateConstuctors.GameIsWon:
@@ -546,31 +516,6 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue()
-    );
-  }
-
-  createGameStarted(data: DataConstr): GameStarted {
-    assert.equal(data.getFields().length, 6, `GameStarted: Extects 6 fields got ${data.getFields().length}`);
-    assert.equal(data.getFields()[0] instanceof DataBytes, true);
-    const playerOnePubKeyHashData: DataBytes = data.getFields()[0] as DataBytes;
-    assert.equal(data.getFields()[1] instanceof DataBytes, true);
-    const playerTwoPubKeyHashData: DataBytes = data.getFields()[1] as DataBytes;
-    assert.equal(data.getFields()[2] instanceof DataNumber, true);
-    const betInAdaData: DataNumber = data.getFields()[2] as DataNumber;
-    assert.equal(data.getFields()[3] instanceof DataNumber, true);
-    const gameMaxIntervalInSecondsData: DataNumber = data.getFields()[3] as DataNumber;
-    assert.equal(data.getFields()[4] instanceof DataNumber, true);
-    const occurredAtPosixTimeData: DataNumber = data.getFields()[4] as DataNumber;
-    assert.equal(data.getFields()[5] instanceof DataBytes, true);
-    const playerAddressToMakeMoveData: DataBytes = data.getFields()[5] as DataBytes;
-
-    return new GameStarted(
-      playerOnePubKeyHashData.toString(),
-      playerTwoPubKeyHashData.toString(),
-      betInAdaData.getValue(),
-      gameMaxIntervalInSecondsData.getValue(),
-      occurredAtPosixTimeData.getValue(),
-      playerAddressToMakeMoveData.toString()
     );
   }
 
