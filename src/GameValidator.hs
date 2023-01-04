@@ -130,7 +130,7 @@ mkValidator gameState actionCommand _ =  traceIfFalse "Invalid Command for GameS
 -- helper functions.
 
 -- only certain combinations are allowed.
-
+{-# INLINABLE validActionForState #-}
 validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
 validActionForState gs command = 
     case gs of
@@ -146,9 +146,40 @@ validActionForState gs command =
                                 ClaimWinCommand             -> True
                                 _                           -> False
         GameIsTied {}     -> case command of
-                                ClaimWinCommand             -> True
+                                ClaimTieCommand             -> True
                                 _                           -> False
+        _                 -> False
         
+-- match bet in value
+-- need access to txInfo
+canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canJoinGame _ _ = True
+
+-- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
+-- validate output goes back to original wallet
+canCancelInitiatedGame:: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canCancelInitiatedGame _ _ = True
+
+-- move not made before
+-- validate output
+-- output is still in progress, or won , or tied
+canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canMakeMove _ _ = True
+
+-- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
+-- validate output , the winner is the player who is waiting for the other player to play
+canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canCancelInProgressGame _ _ = True
+
+-- validate output
+-- value goes to winner
+canClaimWin :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canClaimWin _ _ = True
+
+-- validate output
+-- value is split evenly
+canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+canClaimTie _ _ = True
 
 
 {- 
