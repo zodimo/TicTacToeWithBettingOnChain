@@ -118,32 +118,49 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
 mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
-mkValidator gameState actionCommand _ =  traceIfFalse "Invalid Command for GameState" $ validActionForState gameState actionCommand
+mkValidator gameState actionCommand ctx =  traceIfFalse "Invalid Command for GameState" $ validActionForState gameState actionCommand ctx
 
 -- helper functions.
 
 -- only certain combinations are allowed.
 {-# INLINABLE validActionForState #-}
-validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-validActionForState gs command = 
+validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validActionForState gs command _ = 
     case gs of
-        GameInitiated {}   -> case command of
+        GameInitiated {}  -> validGameInitiatedCommand command
+        GameInProgress {} -> validGameInProgress command
+        GameIsWon {}      -> validGameIsWonCommand command
+        GameIsTied {}     -> validGameIsTiedCommand command
+        
+{-# INLINABLE validGameInitiatedCommand #-}
+validGameInitiatedCommand :: GameActionCommandRedeemer -> Bool
+validGameInitiatedCommand command = case command of
                                 JoinGameCommand {}          -> True
                                 CancelInitiatedGameCommand  -> True
                                 _                           -> False
-        GameInProgress {} -> case command of
+                                
+{-# INLINABLE validGameInProgress #-}
+validGameInProgress :: GameActionCommandRedeemer -> Bool
+validGameInProgress command = case command of
                                 MakeMoveCommand {}          -> True
                                 CancelInProgressGameCommand -> True
                                 _                           -> False
-        GameIsWon {}      -> case command of
+
+{-# INLINABLE validGameIsWonCommand #-}
+validGameIsWonCommand :: GameActionCommandRedeemer -> Bool
+validGameIsWonCommand command = case command of
                                 ClaimWinCommand             -> True
                                 _                           -> False
-        GameIsTied {}     -> case command of
+
+{-# INLINABLE validGameIsTiedCommand #-}
+validGameIsTiedCommand :: GameActionCommandRedeemer -> Bool
+validGameIsTiedCommand command = case command of
                                 ClaimTieCommand             -> True
                                 _                           -> False
-        
+
 -- match bet in value
 -- need access to txInfo
+-- output to script must batch the bet
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> Bool
 canJoinGame _ _ = True
 
