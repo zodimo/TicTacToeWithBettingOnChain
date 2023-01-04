@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications  #-}
 
-module DeployUntypedAlwaysSucceed
+module DeployTypedAlwaysSucceed
     ( writeUnit
-    , writeUntypedValidator
+    , writeTypedValidator
     ) where
 
 import           Cardano.Api
@@ -16,7 +16,7 @@ import           PlutusTx              (Data (..))
 import qualified PlutusTx
 import qualified Ledger
 
-import           UntypedAlwaysSucceed
+import           TypedAlwaysSucceed
 
 dataToScriptData :: Data -> ScriptData
 dataToScriptData (Constr n xs) = ScriptDataConstructor n $ dataToScriptData <$> xs
@@ -34,5 +34,5 @@ writeValidator file = writeFileTextEnvelope @(PlutusScript PlutusScriptV2) file 
 writeUnit :: IO ()
 writeUnit = writeJSON "testnet/unit.json" ()
 
-writeUntypedValidator :: IO (Either (FileError ()) ())
-writeUntypedValidator = writeValidator "testnet/untyped-always-succeed.plutus" $ validator
+writeTypedValidator :: IO (Either (FileError ()) ())
+writeTypedValidator = writeValidator "testnet/typed-always-succeed.plutus" $ validator

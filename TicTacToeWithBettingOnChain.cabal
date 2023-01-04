@@ -32,6 +32,8 @@ library
                       ,Deploy
                       ,DeployUntypedAlwaysSucceed
                       ,UntypedAlwaysSucceed
+                      ,DeployTypedAlwaysSucceed
+                      ,TypedAlwaysSucceed
 
     -- Modules included in this library but not exported.
     -- other-modules:
