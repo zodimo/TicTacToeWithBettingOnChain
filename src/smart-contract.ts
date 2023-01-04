@@ -43,7 +43,7 @@ export const getTypedAlwaysSucceedScriptAddress = () => {
   const scriptWalletName = "typed-always-succeed";
   cardanoCli.paymentAddressBuild(
     scriptWalletName,
-    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getUntypedAlwaysSucceedScriptFile()))
+    new PaymentAddressBuildOptions(PaymentComponent.scriptFile(getTypedAlwaysSucceedScriptFile()))
   );
   return cardanoCli.scriptWallet(scriptWalletName).paymentAddr;
 };
