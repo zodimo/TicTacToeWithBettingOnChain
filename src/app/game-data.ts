@@ -70,6 +70,10 @@ export class JoinGameCommand implements GameActionCommandInterface<GameAction, J
   toRedeemerScriptData(): Data {
     return DataConstr.from(0, [DataBytes.fromString(this.params.playerTwoPubKeyHash)]);
   }
+
+  get betInAda(): number {
+    return this.gameState.betInAda;
+  }
 }
 
 export class MakeMoveCommand implements GameActionCommandInterface<GameAction, MakeMoveParams>, ToRedeemerScriptData {
