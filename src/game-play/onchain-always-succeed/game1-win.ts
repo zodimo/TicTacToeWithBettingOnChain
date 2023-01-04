@@ -11,8 +11,10 @@ import {
   ToRedeemerScriptData,
   StartGameCommand,
   GameActionCommand,
+  MakeMoveCommand,
+  ClaimWinCommand,
 } from "../../app/game-data.js";
-import { Game } from "../../app/game.js";
+import { Game, GameIsWonPayout, GamePayOut, Payout } from "../../app/game.js";
 import { fromJson, ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 import { createTempFilename } from "../../cardano-cli/temp-dir.js";
 import { cardanoCli } from "../../previewCardanoCliJs.js";
@@ -112,9 +114,19 @@ const getUtxoFromScriptAddress: (utxoId: UtxoId, scriptAddress: string) => Utxo 
 
 const sendStartGameCommandToScriptTransaction: (
   playerWallet: Wallet,
-  command: StartGameCommand,
+  betInAda: number,
+  gameMaxIntervalInSeconds: number,
   scriptAddress: string
-) => UtxoId = (playerWallet, command, scriptAddress) => {
+) => UtxoId = (playerWallet, betInAda, gameMaxIntervalInSeconds, scriptAddress) => {
+  console.log("###########################");
+  console.log("####### START GAME ########");
+  console.log("###########################");
+
+  const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
+
+  const startGameParams = new StartGameParams(playerPubKeyHash, betInAda, gameMaxIntervalInSeconds);
+  const command = new StartGameCommand(startGameParams);
+
   const gameState = Game.handleActionCommand(command);
   const gameStateDatumFile = writeGameStateAsDatumToFile(gameState);
   const sendBetInLovelaceToScript = cardanoCli.toLovelace(command.getParameters().betInAda);
@@ -142,273 +154,294 @@ const sendStartGameCommandToScriptTransaction: (
   const txUtxoId = new UtxoId(txHash, 0);
 
   //wait for transaction to arrive
-  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId);
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
   return txUtxoId;
 };
 
-// ////////////
-// // TX 1
-// ////////////
-// const playerOnePubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(
-//   player1Wallet.keys.payment.verificationKeyFile
-// );
+const sendJoinGameCommandToScriptTransaction: (
+  playerWallet: Wallet,
+  scriptAddress: string,
+  scriptUtxoIdWithGameState: UtxoId
+) => UtxoId = (playerWallet, scriptAddress, gameStateUtxcoId) => {
+  console.log("###########################");
+  console.log("######## JOIN GAME ########");
+  console.log("###########################");
 
-// const startGameParams = new StartGameParams(playerOnePubKeyHash, 50, 1); // 1 second interval
-// const tx1Command = new StartGameCommand(startGameParams);
-// const tx1GameState = Game.handleActionCommand(tx1Command);
-// const tx1GameStateDatumFile = writeGameStateAsDatumToFile(tx1GameState);
+  const utxoFromStack = getUtxoFromScriptAddress(gameStateUtxcoId, scriptAddress);
 
-// const sendBetInLovelaceToScript = cardanoCli.toLovelace(tx1Command.getParameters().betInAda);
-// //calculate change without fees to start with
-// let player1WalletChangeInLovelace =
-//   cardanoCli.getUtxoStackForAddress(player1Wallet.paymentAddr).getLoveLaceValue() - sendBetInLovelaceToScript;
+  const scriptData = fromJson(JSON.stringify(utxoFromStack.inlineDatum));
+  const gameStateFromScriptData = new GameStateFactory().fromScriptData(scriptData);
+  const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
 
-// // add all utxos on payment adress as input
-// const paymentAddressAsInput: (paymentAddress: string) => TxInParameter[] = (paymentAddress) => {
-//   return cardanoCli.getUtxoListForAddress(paymentAddress).map((utxo) => new TxInParameter(new TxIn(utxo.id)));
-// };
+  const joinGameParams = new JoinGameParams(playerPubKeyHash);
+  const command = new JoinGameCommand(gameStateFromScriptData, joinGameParams);
+  const gameState = Game.handleActionCommand(command);
+  const gameStateDatumFile = writeGameStateAsDatumToFile(gameState);
+  const commandRedeemerile = writeCommandParamsAsRedeemerToFile(command);
 
-// // build
-// const createTransactionBuildOptionsForChangeAndFee: (
-//   changeInLovelace: number,
-//   fee: number
-// ) => TransactionBuildOptions = (changeInLovelace, fee) => {
-//   return new TransactionBuildOptions()
-//     .withTxIns(paymentAddressAsInput(player1Wallet.paymentAddr))
-//     .withTxOuts([
-//       new TxOutParameter(
-//         new TxOut(scriptAddress, sendBetInLovelaceToScript),
-//         TxOutDatum.inlineFile(tx1GameStateDatumFile)
-//       ),
-//     ])
-//     .withChangeAddress(player1Wallet.paymentAddr);
-// };
+  const outputValueInLovelace = utxoFromStack.value.lovelace + cardanoCli.toLovelace(command.betInAda);
 
-// //draft transaction
-// const tx1BodyToSign = cardanoCli.transactionBuild(
-//   createTransactionBuildOptionsForChangeAndFee(player1WalletChangeInLovelace, 0)
-// );
+  const transactionBuildOptions = new TransactionBuildOptions()
+    .withTxIns(utxoStackAsInput(utxoStackForWallet(playerWallet)))
+    .withTxIn(utxoAsTransactionBuildInput(utxoFromStack, commandRedeemerile))
+    .withRequiredSigner(RequiredSigner.file(playerWallet.keys.payment.signingKeyFile))
+    .withTxInCollateral(utxoStackForWallet(playerWallet).utxos[0].id.toString()) //just take the first- blindly
+    .withTxOut(
+      new TxOutParameter(new TxOut(scriptAddress, outputValueInLovelace), TxOutDatum.inlineFile(gameStateDatumFile))
+    )
+    .withChangeAddress(playerWallet.paymentAddr);
 
-// //sign
+  //draft transaction
+  const draftTransactionBodyFile = cardanoCli.transactionBuild(transactionBuildOptions);
+  // sign transaction
+  const signedTransactionFile = cardanoCli.transactionSign(
+    new TransactionSignOptions(TxToSign.txBodyFile(draftTransactionBodyFile), [
+      new SigningKeyFile(playerWallet.keys.payment.signingKeyFile),
+    ])
+  );
 
-// const tx1SignedTransactionFile = cardanoCli.transactionSign(
-//   new TransactionSignOptions(TxToSign.txBodyFile(tx1BodyToSign), [
-//     new SigningKeyFile(player1Wallet.keys.payment.signingKeyFile),
-//   ])
-// );
-// //send
-// const tx1Hash = cardanoCli.transactionSubmit(new TransactionSubmitOptions(tx1SignedTransactionFile));
-// const tx1UtxoId = new UtxoId(tx1Hash, 0);
+  //send
+  const txHash = cardanoCli.transactionSubmit(new TransactionSubmitOptions(signedTransactionFile));
+  const txUtxoId = new UtxoId(txHash, 0);
 
-// //wait for transaction to arrive
-// cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, tx1UtxoId);
-// console.log(`Utxo [${tx1UtxoId.toString()}] found at paymentAddess ${scriptAddress}`);
+  //wait for transaction to arrive
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
+  return txUtxoId;
+};
 
-// ///////////////////////////////////////////////
-// //      ONLY UtxoId crosses the line
-// //////////////////////////////////////////////
+const sendMakeMoveCommandToScriptTransaction: (
+  playerWallet: Wallet,
+  move: Move,
+  scriptAddress: string,
+  scriptUtxoIdWithGameState: UtxoId
+) => UtxoId = (playerWallet, move, scriptAddress, gameStateUtxoId) => {
+  console.log("###########################");
+  console.log("######## MAKE MOVE ########");
+  console.log("###########################");
 
-// ////////////
-// // TX 2
-// ////////////
+  const utxoFromStack = getUtxoFromScriptAddress(gameStateUtxoId, scriptAddress);
 
-// // should we use the known UtxoId for it or find it on script address?
+  const scriptData = fromJson(JSON.stringify(utxoFromStack.inlineDatum));
+  const gameStateFromScriptData = new GameStateFactory().fromScriptData(scriptData);
+  const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
 
-// //function to get the utxo to use :)
+  const makeMoveParams = new MakeMoveParams(playerPubKeyHash, move);
+  const command = new MakeMoveCommand(gameStateFromScriptData, makeMoveParams);
+  const gameState = Game.handleActionCommand(command);
+  const gameStateDatumFile = writeGameStateAsDatumToFile(gameState);
+  const commandRedeemerile = writeCommandParamsAsRedeemerToFile(command);
 
-// // const tx1UtxoId = UtxoId.fromString("d7c4701ff30d807e41eb3d7a7434ad76d597c391709a5663979959abcc185d7d#1");
-// const tx1UtxoFromStack = getUtxoFromScriptAddress(tx1UtxoId, scriptAddress);
+  const outputValueInLovelace = utxoFromStack.value.lovelace;
 
-// const tx1ScriptData = fromJson(JSON.stringify(tx1UtxoFromStack.inlineDatum));
-// const tx1GameStateFromScriptData = new GameStateFactory().fromScriptData(tx1ScriptData);
-// const playerTwoPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(
-//   player2Wallet.keys.payment.verificationKeyFile
-// );
-// const joinGameParams = new JoinGameParams(playerTwoPubKeyHash);
-// const tx2Command = new JoinGameCommand(tx1GameStateFromScriptData, joinGameParams);
-// const tx2GameState = Game.handleActionCommand(tx2Command);
-// const tx2GameStateDatumFile = writeGameStateAsDatumToFile(tx2GameState);
-// const tx2CommandRedeemerile = writeCommandParamsAsRedeemerToFile(tx2Command);
+  const transactionBuildOptions = new TransactionBuildOptions()
+    .withTxIns(utxoStackAsInput(utxoStackForWallet(playerWallet)))
+    .withTxIn(utxoAsTransactionBuildInput(utxoFromStack, commandRedeemerile))
+    .withRequiredSigner(RequiredSigner.file(playerWallet.keys.payment.signingKeyFile))
+    .withTxInCollateral(utxoStackForWallet(playerWallet).utxos[0].id.toString()) //just take the first- blindly
+    .withTxOut(
+      new TxOutParameter(new TxOut(scriptAddress, outputValueInLovelace), TxOutDatum.inlineFile(gameStateDatumFile))
+    )
+    .withChangeAddress(playerWallet.paymentAddr);
 
-// //consume utxo with inline datum
-// //and send it back to the script with the new datum
-// const tx2outputValueInLovelace = tx1UtxoFromStack.value.lovelace + cardanoCli.toLovelace(tx2Command.betInAda);
+  //draft transaction
+  const draftTransactionBodyFile = cardanoCli.transactionBuild(transactionBuildOptions);
+  // sign transaction
+  const signedTransactionFile = cardanoCli.transactionSign(
+    new TransactionSignOptions(TxToSign.txBodyFile(draftTransactionBodyFile), [
+      new SigningKeyFile(playerWallet.keys.payment.signingKeyFile),
+    ])
+  );
 
-// const tx2TransactionBuildOptions = new TransactionBuildOptions();
-// tx2TransactionBuildOptions.withTxIns(utxoStackAsInput(utxoStackForWallet(player2Wallet)));
-// tx2TransactionBuildOptions.withTxIn(utxoAsTransactionBuildInput(tx1UtxoFromStack, tx2CommandRedeemerile));
-// tx2TransactionBuildOptions.withRequiredSigner(RequiredSigner.file(player2Wallet.keys.payment.signingKeyFile));
-// tx2TransactionBuildOptions.withTxInCollateral(utxoStackForWallet(player2Wallet).utxos[0].id.toString()); //just take the first- blindly
-// tx2TransactionBuildOptions.withTxOut(
-//   new TxOutParameter(new TxOut(scriptAddress, tx2outputValueInLovelace), TxOutDatum.inlineFile(tx2GameStateDatumFile))
-// );
-// tx2TransactionBuildOptions.withChangeAddress(player2Wallet.paymentAddr);
+  //send
+  const txHash = cardanoCli.transactionSubmit(new TransactionSubmitOptions(signedTransactionFile));
+  const txUtxoId = new UtxoId(txHash, 0);
 
-// //draft transaction
-// const tx2DraftTransactionBodyFile = cardanoCli.transactionBuild(tx2TransactionBuildOptions);
-// // sign transaction
-// const tx2SignedTransactionFile = cardanoCli.transactionSign(
-//   new TransactionSignOptions(TxToSign.txBodyFile(tx2DraftTransactionBodyFile), [
-//     new SigningKeyFile(player2Wallet.keys.payment.signingKeyFile),
-//   ])
-// );
+  //wait for transaction to arrive
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
+  return txUtxoId;
+};
 
-// //send
-// const tx2Hash = cardanoCli.transactionSubmit(new TransactionSubmitOptions(tx2SignedTransactionFile));
-// const tx2UtxoId = new UtxoId(tx2Hash, 0);
+const sendClaimWinCommandToScriptTransaction: (
+  playerWallet: Wallet,
+  scriptAddress: string,
+  scriptUtxoIdWithGameState: UtxoId
+) => UtxoId = (playerWallet, scriptAddress, gameStateUtxoId) => {
+  console.log("###########################");
+  console.log("######## CLAIM WIN ########");
+  console.log("###########################");
 
-// //wait for transaction to arrive
-// cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, tx2UtxoId);
-// console.log(`Utxo [${tx2UtxoId.toString()}] found at paymentAddess ${scriptAddress}`);
+  const utxoFromStack = getUtxoFromScriptAddress(gameStateUtxoId, scriptAddress);
+
+  const scriptData = fromJson(JSON.stringify(utxoFromStack.inlineDatum));
+  const gameStateFromScriptData = new GameStateFactory().fromScriptData(scriptData);
+  const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
+
+  const command = new ClaimWinCommand(gameStateFromScriptData);
+  //us payout to create outputs to transaction.
+  const gamePayout = Game.handleEndGameActionCommand(command);
+  const commandRedeemerile = writeCommandParamsAsRedeemerToFile(command);
+
+  // const outputValueInLovelace = utxoFromStack.value.lovelace;
+
+  const payOutToWallet: (payout: Payout, playerWallets: Wallet[]) => Wallet = (payout, wallets) => {
+    const maybeIdentifiedWallet = wallets.find((wallet) => {
+      return cardanoCli.pubKeyHashFromVerificationKeyFile(wallet.keys.payment.verificationKeyFile) == payout.pubKeyHash;
+    });
+    assert.equal(!!maybeIdentifiedWallet, true, "No Wallet pub key hash matches!");
+    return maybeIdentifiedWallet as Wallet;
+  };
+
+  const gamePayoutAsTxOutParameters: (gamePayOut: GameIsWonPayout, winningWallet: Wallet) => TxOutParameter = (
+    gamePayout,
+    wallet
+  ) => {
+    // @TODO improve this very naive approach
+    // determine who the pubKeyHash Belongs to...
+    // which value to use ? value in payout or on utxo ?
+
+    const winningWalletPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(
+      wallet.keys.payment.verificationKeyFile
+    );
+    assert.equal(winningWalletPubKeyHash == gamePayout.payout.pubKeyHash, true, "Expects pub key hash to match!");
+
+    const payoutInLoveLace = cardanoCli.toLovelace(gamePayout.payout.amountInAda);
+
+    return new TxOutParameter(new TxOut(wallet.paymentAddr, payoutInLoveLace));
+  };
+
+  const gamePayoutInnerPayout = (gamePayout as GameIsWonPayout).payout;
+  const winningWallet = payOutToWallet(gamePayoutInnerPayout, [player1Wallet, player2Wallet]);
+
+  const transactionBuildOptions = new TransactionBuildOptions()
+    .withTxIns(utxoStackAsInput(utxoStackForWallet(playerWallet))) //for fees
+    .withTxIn(utxoAsTransactionBuildInput(utxoFromStack, commandRedeemerile)) //winning game input
+    .withRequiredSigner(RequiredSigner.file(playerWallet.keys.payment.signingKeyFile))
+    .withTxInCollateral(utxoStackForWallet(playerWallet).utxos[0].id.toString()) //just take the first- blindly
+    .withTxOut(gamePayoutAsTxOutParameters(gamePayout as GameIsWonPayout, winningWallet))
+    .withChangeAddress(playerWallet.paymentAddr);
+
+  //draft transaction
+  const draftTransactionBodyFile = cardanoCli.transactionBuild(transactionBuildOptions);
+  // sign transaction
+  const signedTransactionFile = cardanoCli.transactionSign(
+    new TransactionSignOptions(TxToSign.txBodyFile(draftTransactionBodyFile), [
+      new SigningKeyFile(playerWallet.keys.payment.signingKeyFile),
+    ])
+  );
+
+  //send
+  const txHash = cardanoCli.transactionSubmit(new TransactionSubmitOptions(signedTransactionFile));
+  const txUtxoId = new UtxoId(txHash, 0);
+
+  //wait for transaction to arrive
+  cardanoCli.waitForUtxoAtPaymentAddress(winningWallet.paymentAddr, txUtxoId, 120);
+  return txUtxoId;
+};
+
+////////////
+// TX 1
+////////////
+
+const tx1UtxoId = sendStartGameCommandToScriptTransaction(player1Wallet, 5, 1, scriptAddress);
 
 ///////////////////////////////////////////////
 //      ONLY UtxoId crosses the line
 //////////////////////////////////////////////
 
-const tx2UtxoId = UtxoId.fromString("83438c74b2cf2f9b196111d6ab7560762e94131283761fc28d258ed91efd33cb#0");
-console.log(tx2UtxoId);
-const tx2UtxoFromStack = getUtxoFromScriptAddress(tx2UtxoId, scriptAddress);
+////////////
+// TX 2
+////////////
 
-console.log(JSON.stringify(tx2UtxoFromStack, null, 2));
+const tx2UtxoId = sendJoinGameCommandToScriptTransaction(player2Wallet, scriptAddress, tx1UtxoId);
+
+///////////////////////////////////////////////
+//      ONLY UtxoId crosses the line
+//////////////////////////////////////////////
 
 ////////////
 // TX 3
 ////////////
-// // fake game start with player 2 as O and move A 1
+// fake game start with player 2 as O and move A 1
 
-// //    1   2   3
-// // A _O_|___|___
-// // B ___|___|___
-// // C    |   |
+//    1   2   3
+// A _O_|___|___
+// B ___|___|___
+// C    |   |
 
-// const move1 = new Move(Row.ROW_A, Column.Col_1);
-// const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
-// const tx3: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-//   //Make first move
-//   return Game.loadGame(gamestate).makeFirstMove(makeMoveParams).gameState;
-// };
-// const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(tx2GameStateAsScriptData);
-// const tx3GameState = tx3(tx2GameStateFromScriptData, makeMoveParams1);
-// const tx3GameStateAsScriptData = tx3GameState.toScriptData();
-// console.log("##########################");
-// console.log(`tx3 [${tx3GameState.constructor.name}]: ${JSON.stringify(tx3GameState, null, 2)}`);
-// console.log(
-//   `tx3 scriptdata : ${tx3GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
-// );
+const tx3Move = new Move(Row.ROW_A, Column.Col_1);
+const tx3UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx3Move, scriptAddress, tx2UtxoId);
 
-// ///////////////////////////////////////////////
-// //      ONLY ScriptData crosses the line
-// //////////////////////////////////////////////
+///////////////////////////////////////////////
+//      ONLY ScriptData crosses the line
+//////////////////////////////////////////////
 
-// // TX 4
-// // Player 1 Move B 2
-// //    1   2   3
+// TX 4
+// Player 1 Move B 2
+//    1   2   3
 
-// // A _O_|___|___
-// // B ___|_X_|___
-// // C    |   |
+// A _O_|___|___
+// B ___|_X_|___
+// C    |   |
 
-// const move2 = new Move(Row.ROW_B, Column.Col_2);
-// const makeMoveParams2 = new MakeMoveParams(playerOneAddress, move2);
-// const tx4: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-//   return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-// };
+const tx4Move = new Move(Row.ROW_B, Column.Col_2);
+const tx4UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx4Move, scriptAddress, tx3UtxoId);
+// const tx4UtxoFromStack = getUtxoFromScriptAddress(tx4UtxoId, scriptAddress);
+// console.log(JSON.stringify(tx4UtxoFromStack, null, 2));
 
-// const tx3GameStateFromScriptData = new GameStateFactory().fromScriptData(tx3GameStateAsScriptData);
-// const tx4GameState = tx4(tx3GameStateFromScriptData, makeMoveParams2);
-// const tx4GameStateAsScriptData = tx4GameState.toScriptData();
-// console.log("##########################");
-// console.log(`tx4 [${tx4GameState.constructor.name}]: ${JSON.stringify(tx4GameState, null, 2)}`);
-// console.log(
-//   `tx4 scriptdata : ${tx4GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
-// );
+///////////////////////////////////////////////
+//      ONLY ScriptData crosses the line
+//////////////////////////////////////////////
 
-// ///////////////////////////////////////////////
-// //      ONLY ScriptData crosses the line
-// //////////////////////////////////////////////
+// TX 5
+// Player 2 Move A 2
 
-// // TX 5
-// // Player 2 Move A 2
+// A _O_|_O_|___
+// B ___|_X_|___
+// C    |   |
 
-// // A _O_|_O_|___
-// // B ___|_X_|___
-// // C    |   |
+const tx5Move = new Move(Row.ROW_A, Column.Col_2);
+const tx5UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx5Move, scriptAddress, tx4UtxoId);
+// const tx5UtxoFromStack = getUtxoFromScriptAddress(tx5UtxoId, scriptAddress);
+// console.log(JSON.stringify(tx5UtxoFromStack, null, 2));
 
-// const move3 = new Move(Row.ROW_A, Column.Col_2);
-// const makeMoveParams3 = new MakeMoveParams(playerTwoAddress, move3);
-// const tx5: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-//   return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-// };
+///////////////////////////////////////////////
+//      ONLY ScriptData crosses the line
+//////////////////////////////////////////////
 
-// const tx4GameStateFromScriptData = new GameStateFactory().fromScriptData(tx4GameStateAsScriptData);
-// const tx5GameState = tx5(tx4GameStateFromScriptData, makeMoveParams3);
-// const tx5GameStateAsScriptData = tx5GameState.toScriptData();
-// console.log("##########################");
-// console.log(`tx5 [${tx5GameState.constructor.name}]: ${JSON.stringify(tx5GameState, null, 2)}`);
-// console.log(
-//   `tx5 scriptdata : ${tx5GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
-// );
+// TX 6
+// Player 1 Move B 3
+
+// A _O_|_O_|___
+// B ___|_X_|_X_
+// C    |   |
+
+const tx6Move = new Move(Row.ROW_B, Column.Col_3);
+const tx6UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx6Move, scriptAddress, tx5UtxoId);
+// const tx6UtxoFromStack = getUtxoFromScriptAddress(tx6UtxoId, scriptAddress);
+// console.log(JSON.stringify(tx6UtxoFromStack, null, 2));
 
 // ///////////////////////////////////////////////
-// //      ONLY ScriptData crosses the line
-// //////////////////////////////////////////////
+//      ONLY ScriptData crosses the line
+//////////////////////////////////////////////
 
-// // TX 6
-// // Player 1 Move B 3
+// TX 7
+// Player 2 Move A 3
 
-// // A _O_|_O_|___
-// // B ___|_X_|_X_
-// // C    |   |
+// A _O_|_O_|_O_
+// B ___|_X_|_X_
+// C    |   |
 
-// const move4 = new Move(Row.ROW_B, Column.Col_3);
-// const makeMoveParams4 = new MakeMoveParams(playerOneAddress, move4);
-// const tx6: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-//   return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-// };
+const tx7Move = new Move(Row.ROW_A, Column.Col_3);
+const tx7UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx7Move, scriptAddress, tx6UtxoId);
+// const tx7UtxoFromStack = getUtxoFromScriptAddress(tx7UtxoId, scriptAddress);
+// console.log(JSON.stringify(tx7UtxoFromStack, null, 2));
 
-// const tx5GameStateFromScriptData = new GameStateFactory().fromScriptData(tx5GameStateAsScriptData);
-// const tx6GameState = tx6(tx5GameStateFromScriptData, makeMoveParams4);
-// const tx6GameStateAsScriptData = tx6GameState.toScriptData();
-// console.log("##########################");
-// console.log(`tx6 [${tx6GameState.constructor.name}]: ${JSON.stringify(tx6GameState, null, 2)}`);
-// console.log(
-//   `tx6 scriptdata : ${tx6GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
-// );
+///////////////////////////////////////////////
+//      ONLY ScriptData crosses the line
+//////////////////////////////////////////////
 
-// ///////////////////////////////////////////////
-// //      ONLY ScriptData crosses the line
-// //////////////////////////////////////////////
-
-// // TX 7
-// // Player 2 Move A 3
-
-// // A _O_|_O_|_O_
-// // B ___|_X_|_X_
-// // C    |   |
-
-// const move5 = new Move(Row.ROW_A, Column.Col_3);
-// const makeMoveParams5 = new MakeMoveParams(playerTwoAddress, move5);
-// const tx7: (gameState: GameState, makeMoveParams: MakeMoveParams) => GameState = (gamestate, makeMoveParams) => {
-//   return Game.loadGame(gamestate).makeMove(makeMoveParams).gameState;
-// };
-
-// const tx6GameStateFromScriptData = new GameStateFactory().fromScriptData(tx6GameStateAsScriptData);
-// const tx7GameState = tx7(tx6GameStateFromScriptData, makeMoveParams5);
-// const tx7GameStateAsScriptData = tx7GameState.toScriptData();
-// console.log("##########################");
-// console.log(`tx7 [${tx7GameState.constructor.name}]: ${JSON.stringify(tx7GameState, null, 2)}`);
-// console.log(
-//   `tx7 scriptdata : ${tx7GameStateAsScriptData.toScriptDataJson(ScriptDataJsonSchema.ScriptDataJsonDetailedSchema)}`
-// );
-
-// ///////////////////////////////////////////////
-// //      ONLY ScriptData crosses the line
-// //////////////////////////////////////////////
-
-// const tx7GameStateFromScriptData = new GameStateFactory().fromScriptData(tx7GameStateAsScriptData);
-// const tx8: (gameState: GameState) => void = (gamestate) => {
-//   Game.loadGame(gamestate).claimWin();
-// };
-// // TX 8 Claim Win
-// console.log("##########################");
-// tx8(tx7GameStateFromScriptData);
+//any player can call claim win :) to pay the fees.
+// TX 8 Claim Win
+const tx8UtxoId = sendClaimWinCommandToScriptTransaction(player2Wallet, scriptAddress, tx7UtxoId);
+console.log("##########################");
+console.log(`The last utxo of the winning game : ${tx8UtxoId}`);
