@@ -101,14 +101,6 @@ PlutusTx.makeIsDataIndexed ''GameStateDatum [('GameInitiated, 0), ('GameStarted,
 
 -- Custom DataTypes for Redeemers
 
--- JoinGameCommand
--- MakeMoveCommand
--- ClaimWinCommand
--- ClaimTieCommand
--- CancelInitiatedGameCommand
--- CancelInProgressGameCommand
-
-
 data GameActionCommandRedeemer = JoinGameCommand
     { jgcPlayerTwoPubKeyHash     :: BuiltinByteString
     } | MakeMoveCommand
@@ -133,7 +125,7 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
 mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
-mkValidator gameState actionCommand _ =  validActionForState gameState actionCommand
+mkValidator gameState actionCommand _ =  traceIfFalse "Invalid Command for GameState" $ validActionForState gameState actionCommand
 
 -- helper functions.
 
@@ -142,18 +134,18 @@ mkValidator gameState actionCommand _ =  validActionForState gameState actionCom
 validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
 validActionForState gs command = 
     case gs of
-        GameInitiated {..}   -> case command of
-                                JoinGameCommand {..}        -> True
+        GameInitiated {}   -> case command of
+                                JoinGameCommand {}          -> True
                                 CancelInitiatedGameCommand  -> True
                                 _                           -> False
-        GameInProgress {..} -> case command of
-                                MakeMoveCommand {..}        -> True
+        GameInProgress {} -> case command of
+                                MakeMoveCommand {}          -> True
                                 CancelInProgressGameCommand -> True
                                 _                           -> False
-        GameIsWon {..}      -> case command of
+        GameIsWon {}      -> case command of
                                 ClaimWinCommand             -> True
                                 _                           -> False
-        GameIsTied {..}     -> case command of
+        GameIsTied {}     -> case command of
                                 ClaimWinCommand             -> True
                                 _                           -> False
         
