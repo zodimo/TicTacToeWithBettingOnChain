@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies        #-}  --Allow use and definition of indexed type and data families
 {-# LANGUAGE TypeOperators       #-}  --Allow the use and definition of types with operator names
 {-# LANGUAGE OverloadedStrings   #-}  --Allow string to be used for bytestring
-{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE RecordWildCards     #-}  --Allwow {..}
 
 module GameValidator where
 
@@ -145,17 +145,17 @@ validActionForState gs command =
         GameInitiated {..}   -> case command of
                                 JoinGameCommand {..}        -> True
                                 CancelInitiatedGameCommand  -> True
-                                otherwise                   -> False
+                                _                           -> False
         GameInProgress {..} -> case command of
                                 MakeMoveCommand {..}        -> True
                                 CancelInProgressGameCommand -> True
-                                otherwise                   -> False
+                                _                           -> False
         GameIsWon {..}      -> case command of
                                 ClaimWinCommand             -> True
-                                otherwise                   -> False
+                                _                           -> False
         GameIsTied {..}     -> case command of
                                 ClaimWinCommand             -> True
-                                otherwise                   -> False
+                                _                           -> False
         
 
 
