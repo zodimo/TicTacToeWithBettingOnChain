@@ -154,7 +154,7 @@ const sendStartGameCommandToScriptTransaction: (
   const txUtxoId = new UtxoId(txHash, 0);
 
   //wait for transaction to arrive
-  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 600);
   return txUtxoId;
 };
 
@@ -205,7 +205,7 @@ const sendJoinGameCommandToScriptTransaction: (
   const txUtxoId = new UtxoId(txHash, 0);
 
   //wait for transaction to arrive
-  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 600);
   return txUtxoId;
 };
 
@@ -257,7 +257,7 @@ const sendMakeMoveCommandToScriptTransaction: (
   const txUtxoId = new UtxoId(txHash, 0);
 
   //wait for transaction to arrive
-  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 120);
+  cardanoCli.waitForUtxoAtPaymentAddress(scriptAddress, txUtxoId, 600);
   return txUtxoId;
 };
 
@@ -334,7 +334,7 @@ const sendClaimWinCommandToScriptTransaction: (
   const txUtxoId = new UtxoId(txHash, 0);
 
   //wait for transaction to arrive
-  cardanoCli.waitForUtxoAtPaymentAddress(winningWallet.paymentAddr, txUtxoId, 120);
+  cardanoCli.waitForUtxoAtPaymentAddress(winningWallet.paymentAddr, txUtxoId, 600);
   return txUtxoId;
 };
 
