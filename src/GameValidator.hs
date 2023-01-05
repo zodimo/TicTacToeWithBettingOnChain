@@ -50,7 +50,8 @@ data Row = Row_A| Row_B | Row_C deriving Show
 data Column = Col_1 | Col_2 | Col_3 deriving Show
 data Move = Move Row Column deriving Show
 data MoveMade = MoveMade BuiltinByteString Move deriving Show
-data Moves = Moves [MoveMade] deriving Show
+data MovesMade = MovesMade [MoveMade] deriving Show
+data Moves = Moves [Move] deriving Show
 
 -- template haskell to make instance of data for custom datatypes.
 PlutusTx.makeIsDataIndexed ''Row [('Row_A,0),('Row_B,1),('Row_C,2)]
@@ -58,6 +59,7 @@ PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
 -- crossing of concersn with names of moves and movesMade and move
 PlutusTx.makeIsDataIndexed ''MoveMade [('MoveMade,0)]
+PlutusTx.makeIsDataIndexed ''MovesMade [('MovesMade,0)]
 PlutusTx.makeIsDataIndexed ''Moves [('Moves,0)]
 
 
@@ -73,7 +75,7 @@ data GameStateDatum = GameInitiated
     , gipGameMaxIntervalInSeconds   :: Integer
     , gipOccurredAtPosixTime        :: Integer
     , gipPlayerAddressToMakeMove    :: BuiltinByteString
-    , gipMoves                      :: Moves
+    , gipMovesMade                  :: MovesMade
     } | GameIsWon
     { giwPlayerOnePubKeyHash        :: BuiltinByteString
     , giwPlayerTwoPubKeyHash        :: BuiltinByteString
@@ -81,13 +83,13 @@ data GameStateDatum = GameInitiated
     , giwGameMaxIntervalInSeconds   :: Integer
     , giwOccurredAtPosixTime        :: Integer
     , giwWinningPlayerAddress       :: BuiltinByteString
-    , giwMoves                      :: Moves
+    , giwMovesMade                  :: MovesMade
     } | GameIsTied
     { gitPlayerOnePubKeyHash        :: BuiltinByteString
     , gitPlayerTwoPubKeyHash        :: BuiltinByteString
     , gitBetInAda                   :: Integer
     , gitOccurredAtPosixTime        :: Integer
-    , gitMoves                      :: Moves
+    , gitMovesMade                  :: MovesMade
     } deriving (Show)
 
 -- template haskell to make instance of data for custom datatypes.
@@ -164,9 +166,9 @@ appendToMovesMade :: MoveMade -> [MoveMade] -> [MoveMade]
 appendToMovesMade  a [] =  [a]
 appendToMovesMade  a (x:xs) = x : appendToMovesMade a xs
 
-{-# INLINABLE extractMovesMadeFromMoves #-}
-extractMovesMadeFromMoves :: Moves -> [MoveMade]
-extractMovesMadeFromMoves (Moves a) = a
+{-# INLINABLE unwrapMovesMade #-}
+unwrapMovesMade :: MovesMade -> [MoveMade]
+unwrapMovesMade (MovesMade a) = a
 
 
 {-# INLINABLE isGameTied #-}
@@ -194,7 +196,7 @@ mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHas
 makeMove :: GameStateDatum -> GameActionCommandRedeemer -> GameStateDatum
 makeMove gip command =   case gip of
     GameInProgress{..} -> case command of
-        MakeMoveCommand{..} -> let movesMade =  appendToMovesMade (MoveMade mmcPlayerPubKeyHash mmcMove) (extractMovesMadeFromMoves gipMoves)
+        MakeMoveCommand{..} -> let movesMade =  appendToMovesMade (MoveMade mmcPlayerPubKeyHash mmcMove) (unwrapMovesMade gipMovesMade)
                         in if isGameWon movesMade then
                             GameIsWon 
                             {giwPlayerOnePubKeyHash         = gipPlayerOnePubKeyHash 
@@ -203,7 +205,7 @@ makeMove gip command =   case gip of
                             , giwGameMaxIntervalInSeconds   = gipGameMaxIntervalInSeconds 
                             , giwOccurredAtPosixTime        = gipOccurredAtPosixTime 
                             , giwWinningPlayerAddress       = gipPlayerOnePubKeyHash -- do the real calc to get the winner
-                            , giwMoves                      = Moves movesMade
+                            , giwMovesMade                  = MovesMade movesMade
 
                             }
                             else ( 
@@ -213,10 +215,10 @@ makeMove gip command =   case gip of
                                     , gitPlayerTwoPubKeyHash        = gipPlayerTwoPubKeyHash 
                                     , gitBetInAda                   = gipBetInAda 
                                     , gitOccurredAtPosixTime        = gipOccurredAtPosixTime 
-                                    , gitMoves                      = Moves movesMade
+                                    , gitMovesMade                  = MovesMade movesMade
                                     }
                                 else 
-                                    GameInProgress {gipMoves = Moves movesMade, ..}
+                                    GameInProgress {gipMovesMade = MovesMade movesMade, ..}
                                 )
         _                   -> traceError "expected MakeMoveCommand"
     _                   -> traceError "expected GameInProgress"
