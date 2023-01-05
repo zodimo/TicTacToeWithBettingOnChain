@@ -149,17 +149,52 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
 --         | otherwise                             = traceError "Invalid game state, cannot join game!"
 
 
+instance Eq Row where
+    {-# INLINABLE (==) #-}
+    Row_A == Row_A = True
+    Row_B == Row_B = True
+    Row_C == Row_C = True
+    Row_A == Row_B = False
+    Row_B == Row_A = False
+    Row_A == Row_C = False
+    Row_C == Row_A = False
+    Row_B == Row_C = False
+    Row_C == Row_B = False
 
--- {-# INLINABLE moveMadeToMove #-}
--- moveMadeToMove :: MoveMade -> Move
--- moveMadeToMove (MoveMade _ move) = move
+
+instance Eq Column where
+    {-# INLINABLE (==) #-}
+    Col_1 == Col_1 = True
+    Col_2 == Col_2 = True
+    Col_3 == Col_3 = True
+    Col_1 == Col_2 = False
+    Col_2 == Col_1 = False
+    Col_1 == Col_3 = False
+    Col_3 == Col_1 = False
+    Col_2 == Col_3 = False
+    Col_3 == Col_2 = False
+
+instance Eq Move where
+    {-# INLINABLE (==) #-}
+    (Move aRow aCol) == (Move bRow bCol) = (aRow == bRow) && (aCol == bCol)
 
 
+{-# INLINABLE moveMadeToMove #-}
+moveMadeToMove :: MoveMade -> Move
+moveMadeToMove (MoveMade _ move) = move
 
--- -- not been played
--- {-# INLINABLE isMoveAvailable #-}
--- isMoveAvailable :: MoveMade -> Moves -> Bool
--- isMoveAvailable moveMade (Moves movesMade) = moveMade `elem` movesMade
+{-# INLINABLE movesMadeToMoves #-}
+movesMadeToMoves :: [MoveMade] -> [Move]
+movesMadeToMoves [] = []
+movesMadeToMoves (x:xs) = moveMadeToMove x : movesMadeToMoves xs
+
+
+-- not been played
+{-# INLINABLE isMoveAvailable #-}
+isMoveAvailable :: Move -> [Move] -> Bool
+-- isMoveAvailable move  moves = True
+-- isMoveAvailable move  moves = traceError "isMoveAvailable not implemented"
+isMoveAvailable move  moves = move `notElem` moves
 
 {-# INLINABLE appendToMovesMade #-}
 appendToMovesMade :: MoveMade -> [MoveMade] -> [MoveMade] 
@@ -169,6 +204,10 @@ appendToMovesMade  a (x:xs) = x : appendToMovesMade a xs
 {-# INLINABLE unwrapMovesMade #-}
 unwrapMovesMade :: MovesMade -> [MoveMade]
 unwrapMovesMade (MovesMade a) = a
+
+{-# INLINABLE unwrapMoves #-}
+unwrapMoves :: Moves -> [Move]
+unwrapMoves (Moves a) = a
 
 
 {-# INLINABLE isGameTied #-}
@@ -181,12 +220,24 @@ isGameWon :: [MoveMade] -> Bool
 -- do the real work
 isGameWon _ = traceError "isGameWon not implemented"
 
-
+{-# INLINABLE isMoveAvailableInThisGame #-}
+isMoveAvailableInThisGame :: GameStateDatum -> GameActionCommandRedeemer ->Bool
+isMoveAvailableInThisGame gip command  = case gip of
+    GameInProgress{..} -> case command of
+            MakeMoveCommand{..} -> traceIfFalse "Illegal move: position is occupied." (isMoveAvailable mmcMove ( movesMadeToMoves (unwrapMovesMade gipMovesMade)))
+            _                   -> traceError "expected MakeMoveCommand"
+    _                  -> traceError "expected GameInProgress"
 -- getWinner :: Moves -> BuiltinByteString
 
+
+{-# INLINABLE mkMoveMadeFromMove #-}
+mkMoveMadeFromMove :: BuiltinByteString -> Move -> MoveMade
+-- ignore the obvious optimization
+mkMoveMadeFromMove pkh move = MoveMade pkh move
+ 
 {-# INLINABLE mkMoveMadeFromMakeMoveCommand #-}
 mkMoveMadeFromMakeMoveCommand :: GameActionCommandRedeemer -> MoveMade
-mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHash mmcMove
+mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = mkMoveMadeFromMove mmcPlayerPubKeyHash mmcMove
  
 
 
@@ -319,10 +370,12 @@ canCancelInitiatedGame _ _ _ = True
 
 -- move not made before
 -- validate output
+-- is correct player to make move
 -- output is still in progress, or won , or tied
 {-# INLINABLE canMakeMove #-}
 canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canMakeMove _ _ _ = True
+-- canMakeMove gs command _ = True
+canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) && True
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output , the winner is the player who is waiting for the other player to play
@@ -391,3 +444,48 @@ valHash = Scripts.validatorHash typedValidator
 scrAddress :: Ledger.Address
 scrAddress = Scripts.validatorAddress typedValidator
 
+
+
+-- some repl tests
+moveA1 = Move Row_A Col_1
+moveA2 = Move Row_A Col_2
+moveA3 = Move Row_A Col_3
+moveB1 = Move Row_B Col_1
+moveB2 = Move Row_B Col_2
+moveB3 = Move Row_B Col_3
+moveC1 = Move Row_C Col_1
+moveC2 = Move Row_C Col_2
+moveC3 = Move Row_C Col_3
+
+-- Simulate game 1
+
+moves1 = [moveA1]
+moves2 = [moveA1, moveA2]
+shouldBeFalse = isMoveAvailable moveA1 moves1
+shouldBeTrue = isMoveAvailable moveA3 moves1
+
+
+player1pkh = "player1" :: BuiltinByteString
+player2pkh = "player2" :: BuiltinByteString
+
+move1 = moveA3
+moveMade1 = mkMoveMadeFromMove player1pkh move1
+
+
+
+
+gameInProgress1 = GameInProgress
+    { gipPlayerOnePubKeyHash         = player1pkh
+    , gipPlayerTwoPubKeyHash        = player2pkh
+    , gipBetInAda                   = 50
+    , gipGameMaxIntervalInSeconds   = 1
+    , gipOccurredAtPosixTime        = 1000
+    , gipPlayerAddressToMakeMove    = player2pkh
+    , gipMovesMade                  = MovesMade []
+    }
+makeMoveCommand1 = MakeMoveCommand
+    { mmcPlayerPubKeyHash           = player2pkh
+    , mmcMove                       = moveA1
+    }
+
+makeMove1SouldBeTrue = isMoveAvailableInThisGame gameInProgress1 makeMoveCommand1
