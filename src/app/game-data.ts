@@ -232,20 +232,20 @@ export class Move implements ToScriptDataSerialise {
   }
 }
 
-export class Moves implements ToScriptDataSerialise {
+export class MovesMade implements ToScriptDataSerialise {
   constructor(public readonly movesMade: MoveMade[]) {}
 
-  static initialise(): Moves {
-    return new Moves([]);
+  static initialise(): MovesMade {
+    return new MovesMade([]);
   }
 
-  makeMove(playerAddress: string, move: Move): Moves {
+  makeMove(playerPubKeyHash: string, move: Move): MovesMade {
     if (this.hasMoveBeenMade(move)) {
       throw new Error("Illegal move: position is occupied.");
     }
-    const moves = this.movesMade;
-    moves.push(new MoveMade(playerAddress, move));
-    return new Moves(moves);
+    const listOfmovesMade = this.movesMade;
+    listOfmovesMade.push(new MoveMade(playerPubKeyHash, move));
+    return new MovesMade(listOfmovesMade);
   }
 
   hasMoveBeenMade(move: Move): boolean {
@@ -273,9 +273,9 @@ export class Moves implements ToScriptDataSerialise {
 }
 
 export class MoveMade implements ToScriptDataSerialise {
-  constructor(public readonly playerAddress: string, public readonly move: Move) {}
+  constructor(public readonly playerPubKeyHash: string, public readonly move: Move) {}
   toScriptData(): Data {
-    return DataConstr.from(0, [DataBytes.fromString(this.playerAddress), this.move.toScriptData()]);
+    return DataConstr.from(0, [DataBytes.fromString(this.playerPubKeyHash), this.move.toScriptData()]);
   }
 }
 
@@ -317,7 +317,7 @@ export class GameInProgress implements ToScriptDataSerialise {
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
     public readonly playerAddressToMakeMove: string,
-    public readonly moves: Moves
+    public readonly movesMade: MovesMade
   ) {}
 
   toScriptData(): Data {
@@ -328,7 +328,7 @@ export class GameInProgress implements ToScriptDataSerialise {
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       DataBytes.fromString(this.playerAddressToMakeMove),
-      this.moves.toScriptData(),
+      this.movesMade.toScriptData(),
     ]);
   }
   expiresAtPosixTime(): number {
@@ -345,7 +345,7 @@ export class GameIsWon implements ToScriptDataSerialise {
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
     public readonly winningPlayerPubKeyHash: string,
-    public readonly moves: Moves
+    public readonly movesMade: MovesMade
   ) {}
 
   toScriptData(): Data {
@@ -356,7 +356,7 @@ export class GameIsWon implements ToScriptDataSerialise {
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       DataBytes.fromString(this.winningPlayerPubKeyHash),
-      this.moves.toScriptData(),
+      this.movesMade.toScriptData(),
     ]);
   }
 }
@@ -367,7 +367,7 @@ export class GameIsTied implements ToScriptDataSerialise {
     public readonly playerTwoPubKeyHash: string,
     public readonly betInAda: number,
     public readonly occurredAtPosixTime: number,
-    public readonly moves: Moves
+    public readonly movesMade: MovesMade
   ) {}
 
   toScriptData(): Data {
@@ -376,7 +376,7 @@ export class GameIsTied implements ToScriptDataSerialise {
       DataBytes.fromString(this.playerTwoPubKeyHash),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.occurredAtPosixTime),
-      this.moves.toScriptData(),
+      this.movesMade.toScriptData(),
     ]);
   }
 }
@@ -452,17 +452,17 @@ export class MoveMadeFactory extends FromScriptDataFactory<MoveMade> {
     assert.equal(validData.getIndex(), 0, `MoveMade: Extects constructor 0 got ${validData.getIndex()}`);
     assert.equal(validData.getFields().length, 2, `MoveMade: Extects 2 fields got ${validData.getFields().length}`);
     assert.equal(validData.getFields()[0] instanceof DataBytes, true);
-    const playerAddressData: DataBytes = validData.getFields()[0] as DataBytes;
+    const playerPubKeyHashData: DataBytes = validData.getFields()[0] as DataBytes;
 
     assert.equal(validData.getFields()[1] instanceof DataConstr, true);
     const moveData: DataConstr = validData.getFields()[1] as DataConstr;
 
-    return new MoveMade(playerAddressData.toString(), new MoveFactory().fromScriptData(moveData));
+    return new MoveMade(playerPubKeyHashData.toString(), new MoveFactory().fromScriptData(moveData));
   }
 }
 
-export class MovesFactory extends FromScriptDataFactory<Moves> {
-  fromScriptData(data: DataConstr): Moves {
+export class MovesMadeFactory extends FromScriptDataFactory<MovesMade> {
+  fromScriptData(data: DataConstr): MovesMade {
     assert.equal(data.getFields().length, 1, `Moves: Extects 1 field got ${data.getFields().length}`);
     assert.equal(data.getFields()[0] instanceof DataArray, true);
     const movesMadeData: DataArray = data.getFields()[0] as DataArray;
@@ -471,7 +471,7 @@ export class MovesFactory extends FromScriptDataFactory<Moves> {
       const moveMadeFactory = new MoveMadeFactory();
       movesMade.push(moveMadeFactory.fromScriptData(moveMadeData));
     });
-    return new Moves(movesMade);
+    return new MovesMade(movesMade);
   }
 }
 
@@ -548,7 +548,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
       playerAddressToMakeMoveData.toString(),
-      new MovesFactory().fromScriptData(movesData)
+      new MovesMadeFactory().fromScriptData(movesData)
     );
   }
 
@@ -581,7 +581,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
       winningPlayerPubKeyHashData.toString(),
-      new MovesFactory().fromScriptData(movesData)
+      new MovesMadeFactory().fromScriptData(movesData)
     );
   }
 
@@ -608,7 +608,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       playerTwoPubKeyHashData.toString(),
       betInAdaData.getValue(),
       occurredAtPosixTimeData.getValue(),
-      new MovesFactory().fromScriptData(movesData)
+      new MovesMadeFactory().fromScriptData(movesData)
     );
   }
 }

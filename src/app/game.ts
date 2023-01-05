@@ -26,7 +26,7 @@ import {
   JoinGameParams,
   MakeMoveCommand,
   MakeMoveParams,
-  Moves,
+  MovesMade,
   Row,
   StartGameCommand,
   StartGameParams,
@@ -128,7 +128,7 @@ export class Game {
       currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
       playerAddressToMakeMove,
-      Moves.initialise()
+      MovesMade.initialise()
     );
 
     return new Game(gameState);
@@ -154,15 +154,16 @@ export class Game {
       playerAddressToMakeMove = currentGamestate.playerTwoPubKeyHash;
     }
 
-    this.assertGameIsPlayable(currentGamestate.moves);
+    this.assertGameIsPlayable(currentGamestate.movesMade);
 
-    const currentMoves = currentGamestate.moves;
-    const newMoves = currentMoves.makeMove(params.playerPubKeyHash, params.move);
+    const currentMovesMade = currentGamestate.movesMade;
+    //this will throw and error if move cannot be made
+    const updatedMovesMade = currentMovesMade.makeMove(params.playerPubKeyHash, params.move);
     const postixTimeNow = +Date.now().toString();
 
     let gameState: GameState;
 
-    if (this.isGameWon(newMoves)) {
+    if (this.isGameWon(updatedMovesMade)) {
       gameState = new GameIsWon(
         currentGamestate.playerOnePubKeyHash,
         currentGamestate.playerTwoPubKeyHash,
@@ -170,15 +171,15 @@ export class Game {
         currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
         params.playerPubKeyHash, //winning player address
-        newMoves
+        updatedMovesMade
       );
-    } else if (this.isGameTied(newMoves)) {
+    } else if (this.isGameTied(updatedMovesMade)) {
       gameState = new GameIsTied(
         currentGamestate.playerOnePubKeyHash,
         currentGamestate.playerTwoPubKeyHash,
         currentGamestate.betInAda,
         postixTimeNow,
-        newMoves
+        updatedMovesMade
       );
     } else {
       gameState = new GameInProgress(
@@ -188,7 +189,7 @@ export class Game {
         currentGamestate.gameMaxIntervalInSeconds,
         postixTimeNow,
         playerAddressToMakeMove,
-        newMoves
+        updatedMovesMade
       );
     }
 
@@ -276,7 +277,7 @@ export class Game {
     ]);
   }
 
-  assertGameIsPlayable(moves: Moves): void {
+  assertGameIsPlayable(moves: MovesMade): void {
     //assert that game is not won or tied.
     if (this.isGameWon(moves)) {
       // @todo fill in player
@@ -287,8 +288,8 @@ export class Game {
       throw new Error("Game is not playable, it is a tie!");
     }
   }
-  isGameTied(moves: Moves): boolean {
-    const isTiedValidator: (moves: Moves) => boolean = (moves) => {
+  isGameTied(moves: MovesMade): boolean {
+    const isTiedValidator: (moves: MovesMade) => boolean = (moves) => {
       // if top rows are played but not the same player
 
       const topLeftMove = moves.getMoveMadeAtPosition(Row.ROW_A, Column.Col_1);
@@ -304,8 +305,8 @@ export class Game {
     //can later be replaced by a custom strategy
     return isTiedValidator(moves);
   }
-  isGameWon(moves: Moves): boolean {
-    const isWonStrategyValidator: (moves: Moves) => boolean = (moves) => {
+  isGameWon(moves: MovesMade): boolean {
+    const isWonStrategyValidator: (moves: MovesMade) => boolean = (moves) => {
       //top row same player strategy
 
       const topLeftMove = moves.getMoveMadeAtPosition(Row.ROW_A, Column.Col_1);
@@ -314,8 +315,8 @@ export class Game {
 
       if (topLeftMove && topMiddleMove && topRightMove) {
         if (
-          topLeftMove.playerAddress == topMiddleMove.playerAddress &&
-          topLeftMove.playerAddress == topRightMove.playerAddress
+          topLeftMove.playerPubKeyHash == topMiddleMove.playerPubKeyHash &&
+          topLeftMove.playerPubKeyHash == topRightMove.playerPubKeyHash
         ) {
           return true;
         }
