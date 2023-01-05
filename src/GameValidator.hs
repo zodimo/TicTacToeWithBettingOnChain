@@ -402,16 +402,6 @@ canCancelInitiatedGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && T
         txTimeRange :: PlutusV2.POSIXTimeRange
         txTimeRange =  PlutusV2.txInfoValidRange info
 
-{-
- compare current posix time of transaction window with time in gamestate
--}
-
-enoughTimeHasPassed :: GameStateDatum -> PlutusV2.POSIXTimeRange-> Bool
-enoughTimeHasPassed gs txTimeRange = case gs of
-        GameInitiated {..}  -> traceIfFalse "Not enough time has passed."  
-             $ not  ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + giGameMaxIntervalInSeconds * 1000)) txTimeRange)
-        _                   -> traceError "expected GameInitiated"
-
 -- move not made before
 -- validate output
 -- is correct player to make move
@@ -426,7 +416,25 @@ canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) && True -- && 
 -- mustPayToPubKey
 {-# INLINABLE canCancelInProgressGame #-}
 canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canCancelInProgressGame _ _ _ = True
+canCancelInProgressGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && True
+    where 
+        info :: PlutusV2.TxInfo
+        info = PlutusV2.scriptContextTxInfo ctx
+
+        txTimeRange :: PlutusV2.POSIXTimeRange
+        txTimeRange =  PlutusV2.txInfoValidRange info
+
+
+
+{-# INLINABLE enoughTimeHasPassed #-}
+enoughTimeHasPassed :: GameStateDatum -> PlutusV2.POSIXTimeRange-> Bool
+enoughTimeHasPassed gs txTimeRange = case gs of
+        GameInitiated {..}  -> traceIfFalse "Not enough time has passed."  
+             $ not  ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + giGameMaxIntervalInSeconds * 1000)) txTimeRange)
+        GameInProgress {..}  -> traceIfFalse "Not enough time has passed."  
+             $ not  ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ gipOccurredAtPosixTime + gipGameMaxIntervalInSeconds * 1000)) txTimeRange)
+        _                   -> traceError "expected GameInitiated or GameInProgress"
+
 
 -- validate output
 -- value goes to winner
