@@ -49,13 +49,14 @@ import           Control.Monad.Freer.Extras     as Extras
 data Row = Row_A| Row_B | Row_C deriving Show
 data Column = Col_1 | Col_2 | Col_3 deriving Show
 data Move = Move Row Column deriving Show
-data MoveMade = MoveMade PaymentPubKeyHash Move deriving Show
+data MoveMade = MoveMade BuiltinByteString Move deriving Show
 data Moves = Moves [MoveMade] deriving Show
 
 -- template haskell to make instance of data for custom datatypes.
 PlutusTx.makeIsDataIndexed ''Row [('Row_A,0),('Row_B,1),('Row_C,2)]
 PlutusTx.makeIsDataIndexed ''Column [('Col_1,0),('Col_2,1),('Col_3,2)]
 PlutusTx.makeIsDataIndexed ''Move [('Move,0)]
+-- crossing of concersn with names of moves and movesMade and move
 PlutusTx.makeIsDataIndexed ''MoveMade [('MoveMade,0)]
 PlutusTx.makeIsDataIndexed ''Moves [('Moves,0)]
 
@@ -110,6 +111,120 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
                                              , ('CancelInProgressGameCommand, 5)
                                              ]
 
+-- state transitions
+
+-- {-# INLINABLE joinGame #-}
+-- joinGame :: GameStateDatum -> GameActionCommandRedeemer -> GameStateDatum
+-- joinGame gs command 
+--         | GameInitiated{..} JoinGameCommand{..} = GameInProgress
+--                                                     { gipPlayerOnePubKeyHash        = giPlayerOnePubKeyHash GameInitiated
+--                                                     , gipPlayerTwoPubKeyHash        = jgcPlayerTwoPubKeyHash JoinGameCommand
+--                                                     , gipBetInAda                   = giBetInAda GameInitiated
+--                                                     , gipGameMaxIntervalInSeconds   = giGameMaxIntervalInSeconds GameInitiated
+--                                                     , gipOccurredAtPosixTime        = giOccurredAtPosixTime  GameInitiated 
+--                                                     -- gipPlayerAddressToMakeMove should have been on the join command
+--                                                     -- but now we choose player 2 to always start.
+--                                                     , gipPlayerAddressToMakeMove    = jgcPlayerTwoPubKeyHash JoinGameCommand
+--                                                     , gipMoves                      = Moves []
+--                                                     }
+--         | otherwise                             = traceError "Invalid game state, cannot join game!"
+
+
+-- {-# INLINABLE joinGame #-}
+-- joinGame :: GameStateDatum -> GameActionCommandRedeemer -> GameStateDatum
+-- joinGame gs command 
+--         | GameInitiated{..} JoinGameCommand{..} = GameInProgress
+--                                                     { gipPlayerOnePubKeyHash        = giPlayerOnePubKeyHash GameInitiated
+--                                                     , gipPlayerTwoPubKeyHash        = jgcPlayerTwoPubKeyHash JoinGameCommand
+--                                                     , gipBetInAda                   = giBetInAda GameInitiated
+--                                                     , gipGameMaxIntervalInSeconds   = giGameMaxIntervalInSeconds GameInitiated
+--                                                     , gipOccurredAtPosixTime        = giOccurredAtPosixTime  GameInitiated 
+--                                                     -- gipPlayerAddressToMakeMove should have been on the join command
+--                                                     -- but now we choose player 2 to always start.
+--                                                     , gipPlayerAddressToMakeMove    = jgcPlayerTwoPubKeyHash JoinGameCommand
+--                                                     , gipMoves                      = Moves []
+--                                                     }
+--         | otherwise                             = traceError "Invalid game state, cannot join game!"
+
+
+
+-- {-# INLINABLE moveMadeToMove #-}
+-- moveMadeToMove :: MoveMade -> Move
+-- moveMadeToMove (MoveMade _ move) = move
+
+
+
+-- -- not been played
+-- {-# INLINABLE isMoveAvailable #-}
+-- isMoveAvailable :: MoveMade -> Moves -> Bool
+-- isMoveAvailable moveMade (Moves movesMade) = moveMade `elem` movesMade
+
+{-# INLINABLE appendToMovesMade #-}
+appendToMovesMade :: MoveMade -> [MoveMade] -> [MoveMade] 
+appendToMovesMade  a [] =  [a]
+appendToMovesMade  a (x:xs) = x : appendToMovesMade a xs
+
+{-# INLINABLE extractMovesMadeFromMoves #-}
+extractMovesMadeFromMoves :: Moves -> [MoveMade]
+extractMovesMadeFromMoves (Moves a) = a
+
+
+{-# INLINABLE isGameTied #-}
+isGameTied :: [MoveMade] -> Bool
+-- do the real work
+isGameTied _ = traceError "isGameTied not implemented"
+
+{-# INLINABLE isGameWon #-}
+isGameWon :: [MoveMade] -> Bool
+-- do the real work
+isGameWon _ = traceError "isGameWon not implemented"
+
+
+-- getWinner :: Moves -> BuiltinByteString
+
+{-# INLINABLE mkMoveMadeFromMakeMoveCommand #-}
+mkMoveMadeFromMakeMoveCommand :: GameActionCommandRedeemer -> MoveMade
+mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHash mmcMove
+ 
+
+
+
+{-# INLINABLE makeMove #-}
+-- gamestate already validated to be GameInProgress
+makeMove :: GameStateDatum -> GameActionCommandRedeemer -> GameStateDatum
+makeMove gip command =   case gip of
+    GameInProgress{..} -> case command of
+        MakeMoveCommand{..} -> let movesMade =  appendToMovesMade (MoveMade mmcPlayerPubKeyHash mmcMove) (extractMovesMadeFromMoves gipMoves)
+                        in if isGameWon movesMade then
+                            GameIsWon 
+                            {giwPlayerOnePubKeyHash         = gipPlayerOnePubKeyHash 
+                            , giwPlayerTwoPubKeyHash        = gipPlayerTwoPubKeyHash 
+                            , giwBetInAda                   = gipBetInAda 
+                            , giwGameMaxIntervalInSeconds   = gipGameMaxIntervalInSeconds 
+                            , giwOccurredAtPosixTime        = gipOccurredAtPosixTime 
+                            , giwWinningPlayerAddress       = gipPlayerOnePubKeyHash -- do the real calc to get the winner
+                            , giwMoves                      = Moves movesMade
+
+                            }
+                            else ( 
+                                if isGameTied movesMade then
+                                    GameIsTied
+                                    { gitPlayerOnePubKeyHash        = gipPlayerOnePubKeyHash 
+                                    , gitPlayerTwoPubKeyHash        = gipPlayerTwoPubKeyHash 
+                                    , gitBetInAda                   = gipBetInAda 
+                                    , gitOccurredAtPosixTime        = gipOccurredAtPosixTime 
+                                    , gitMoves                      = Moves movesMade
+                                    }
+                                else 
+                                    GameInProgress {gipMoves = Moves movesMade, ..}
+                                )
+        _                   -> traceError "expected MakeMoveCommand"
+    _                   -> traceError "expected GameInProgress"
+
+            
+
+
+
 
 
 {-# INLINABLE mkValidator #-} -- Everything that its supposed to run in on-chain code need this pragma
@@ -118,19 +233,21 @@ PlutusTx.makeIsDataIndexed ''GameActionCommandRedeemer [ ('JoinGameCommand, 0)
 mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
-mkValidator gameState actionCommand ctx =  traceIfFalse "Invalid Command for GameState" $ validActionForState gameState actionCommand ctx
+mkValidator gameState actionCommand ctx =  traceIfFalse "Invalid Command for GameState" $ validCommandForGameState gameState actionCommand ctx
+    where 
+        info :: PlutusV2.TxInfo
+        info = PlutusV2.scriptContextTxInfo ctx
 
 -- helper functions.
 
 -- only certain combinations are allowed.
-{-# INLINABLE validActionForState #-}
-validActionForState :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validActionForState gs command ctx = 
-    case gs of
-        GameInitiated {}  -> validGameInitiatedCommand gs command ctx
-        GameInProgress {} -> validGameInProgress gs command ctx
-        GameIsWon {}      -> validGameIsWonCommand gs command ctx
-        GameIsTied {}     -> validGameIsTiedCommand gs command ctx
+{-# INLINABLE validCommandForGameState #-}
+validCommandForGameState :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validCommandForGameState gs command ctx =  case gs of
+                                GameInitiated {}            -> validGameInitiatedCommand gs command ctx
+                                GameInProgress {}           -> validGameInProgress gs command ctx
+                                GameIsWon {}                -> validGameIsWonCommand gs command ctx
+                                GameIsTied {}               -> validGameIsTiedCommand gs command ctx
         
 {-# INLINABLE validGameInitiatedCommand #-}
 validGameInitiatedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
@@ -161,11 +278,36 @@ validGameIsTiedCommand gs command ctx = case command of
 {- LETS GET TO BUSINESS -}
 
 -- match bet in value
+-- can only join game value in utx matches bet
 -- need access to txInfo
 -- output to script must batch the bet
+-- confirm output state is correct
+-- GAME constraint input game state + command params = output game state
+-- TX Contraint Constraints.mustPayToTheScript 
+
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canJoinGame _ _ _ = True
+
+{-
+    assertInputGameBetMatchTheValue
+    the player initiating the game needs to match the value with the bet
+-}
+
+{-
+    correctValueInScriptToMatchBet 
+    the joining player must match the bet with value
+-}
+
+{-
+    correctOutputGameState
+    -- players pkh correctly set
+    -- bet correctly set
+    -- moves are empty
+     ...
+-}
+
+
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output goes back to original wallet
@@ -182,18 +324,21 @@ canMakeMove _ _ _ = True
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output , the winner is the player who is waiting for the other player to play
+-- mustPayToPubKey
 {-# INLINABLE canCancelInProgressGame #-}
 canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canCancelInProgressGame _ _ _ = True
 
 -- validate output
 -- value goes to winner
+-- mustPayToPubKey
 {-# INLINABLE canClaimWin #-}
 canClaimWin :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canClaimWin _ _ _ = True
 
 -- validate output
 -- value is split evenly
+-- mustPayToPubKey
 {-# INLINABLE canClaimTie #-}
 canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canClaimTie _ _ _ = True
