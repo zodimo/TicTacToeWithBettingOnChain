@@ -32,7 +32,6 @@ import qualified Plutus.Trace.Emulator          as Emulator
 import qualified Wallet.Emulator.Wallet         as Wallet
 --"Normal" Haskell -}
 import           Control.Monad                  hiding (fmap)
-import           Data.Map                       as Map
 import           Data.Text                      (Text)
 import           Data.Void                      (Void)
 import           Prelude                        (IO, Semigroup (..), String, Show (..))
@@ -185,15 +184,12 @@ moveMadeToMove (MoveMade _ move) = move
 
 {-# INLINABLE movesMadeToMoves #-}
 movesMadeToMoves :: [MoveMade] -> [Move]
-movesMadeToMoves [] = []
-movesMadeToMoves (x:xs) = moveMadeToMove x : movesMadeToMoves xs
+movesMadeToMoves = map moveMadeToMove
 
 
 -- not been played
 {-# INLINABLE isMoveAvailable #-}
 isMoveAvailable :: Move -> [Move] -> Bool
--- isMoveAvailable move  moves = True
--- isMoveAvailable move  moves = traceError "isMoveAvailable not implemented"
 isMoveAvailable move  moves = move `notElem` moves
 
 {-# INLINABLE appendToMovesMade #-}
