@@ -226,14 +226,9 @@ isMoveAvailableInThisGame gip command  = case gip of
 -- getWinner :: Moves -> BuiltinByteString
 
 
-{-# INLINABLE mkMoveMadeFromMove #-}
-mkMoveMadeFromMove :: BuiltinByteString -> Move -> MoveMade
--- ignore the obvious optimization
-mkMoveMadeFromMove pkh move = MoveMade pkh move
- 
 {-# INLINABLE mkMoveMadeFromMakeMoveCommand #-}
 mkMoveMadeFromMakeMoveCommand :: GameActionCommandRedeemer -> MoveMade
-mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = mkMoveMadeFromMove mmcPlayerPubKeyHash mmcMove
+mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHash mmcMove
  
 
 
@@ -465,7 +460,7 @@ player1pkh = "player1" :: BuiltinByteString
 player2pkh = "player2" :: BuiltinByteString
 
 move1 = moveA3
-moveMade1 = mkMoveMadeFromMove player1pkh move1
+moveMade1 = MoveMade player1pkh move1
 
 
 
