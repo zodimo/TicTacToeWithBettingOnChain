@@ -19,17 +19,17 @@ import           PlutusTx.Prelude               hiding (Semigroup(..), unless)
 --Contract Monad
 import           Plutus.Contract               
 --Ledger 
-import           Ledger                         hiding (singleton)
-import qualified Ledger.Address                 as Address
-import           Ledger.Constraints             as Constraints              -- Same library name, different functions for V1 and V2 in some cases
+-- import           Ledger                         hiding (singleton)
+-- import qualified Ledger.Address                 as Address
+-- import           Ledger.Constraints             as Constraints              -- Same library name, different functions for V1 and V2 in some cases
 --import qualified Ledger.Scripts               as Scripts               
 import qualified Plutus.Script.Utils.V2.Typed.Scripts as Scripts            -- New library name for Typed Validators and some new fuctions
 import qualified Plutus.V2.Ledger.Api                 as PlutusV2    
-import           Ledger.Ada                     as Ada 
---Trace Emulator
-import           Plutus.Trace
-import qualified Plutus.Trace.Emulator          as Emulator
-import qualified Wallet.Emulator.Wallet         as Wallet
+import qualified Plutus.V2.Ledger.Contexts            as PlutusV2    
+
+import           Plutus.V1.Ledger.Interval                  (contains)
+import qualified Ledger.Ada                 as Ada
+
 --"Normal" Haskell -}
 import           Control.Monad                  hiding (fmap)
 import           Data.Text                      (Text)
@@ -332,11 +332,48 @@ validGameIsTiedCommand gs command ctx = case command of
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canJoinGame _ _ _ = True
+-- canJoinGame gs _ ctx = gameBetMatchTheValue gs valueInScriptUtxo && True
+--     where 
+--         info :: PlutusV2.TxInfo
+--         info = PlutusV2.scriptContextTxInfo ctx
 
-{-
-    assertInputGameBetMatchTheValue
-    the player initiating the game needs to match the value with the bet
--}
+
+        
+
+--         hasTxInInfoDatum :: PlutusV2.TxInInfo -> Bool
+--         hasTxInInfoDatum txInIfno =  case (PlutusV2.txOutDatumHash . PlutusV2.txInInfoResolved txInIfno) of
+--                                             Nothing -> False
+--                                             Just _  -> True
+
+--         getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
+--         getTxInInfoWithDatum txInIndfos= filter hasTxInInfoDatumtxInIndfos
+    
+
+--         -- filter function
+--         getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
+--         getSriptInputTxInInfoFromTxInfo txInfo = head(getTxInInfoWithDatum $  PlutusV2.txInfoInputs txInfo)
+        
+--         -- get the scriptInputTxInInfo
+--         scriptInputTxInInfo :: PlutusV2.TxInInfo
+--         scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
+
+--         -- get the value of the scriptInputTxInInfo 
+--         valueInScriptUtxo :: PlutusV2.Value
+--         valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
+
+
+-- {-
+--     assertInputGameBetMatchTheValue
+--     the player initiating the game needs to match the value with the bet
+-- -}
+-- {-# INLINABLE gameBetMatchTheValue #-}
+-- gameBetMatchTheValue :: GameStateDatum -> PlutusV2.Value -> Bool
+-- gameBetMatchTheValue gs value = case gs of
+--                                 GameInitiated {..}          -> Ada.lovelaceValueOf giBetInAda == value
+--                                 _                           -> traceError "Invalid initiated game. Value does not match bet"
+
+
+
 
 {-
     correctValueInScriptToMatchBet 
@@ -357,7 +394,23 @@ canJoinGame _ _ _ = True
 -- validate output goes back to original wallet
 {-# INLINABLE canCancelInitiatedGame #-}
 canCancelInitiatedGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canCancelInitiatedGame _ _ _ = True
+canCancelInitiatedGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && True
+    where 
+        info :: PlutusV2.TxInfo
+        info = PlutusV2.scriptContextTxInfo ctx
+
+        txTimeRange :: PlutusV2.POSIXTimeRange
+        txTimeRange =  PlutusV2.txInfoValidRange info
+
+{-
+ compare current posix time of transaction window with time in gamestate
+-}
+
+enoughTimeHasPassed :: GameStateDatum -> PlutusV2.POSIXTimeRange-> Bool
+enoughTimeHasPassed gs txTimeRange = case gs of
+        GameInitiated {..}  -> traceIfFalse "Not enough time has passed."  
+             $ not  ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + giGameMaxIntervalInSeconds * 1000)) txTimeRange)
+        _                   -> traceError "expected GameInitiated"
 
 -- move not made before
 -- validate output
@@ -366,7 +419,7 @@ canCancelInitiatedGame _ _ _ = True
 {-# INLINABLE canMakeMove #-}
 canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canMakeMove gs command _ = True
-canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) && True
+canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) && True -- && True is placholder for more checks
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output , the winner is the player who is waiting for the other player to play
@@ -426,18 +479,22 @@ typedValidator = Scripts.mkTypedValidator @Game
 
     
 
-validator :: Validator
+validator :: PlutusV2.Validator
 validator = Scripts.validatorScript typedValidator
 
-valHash :: Ledger.ValidatorHash
+valHash :: PlutusV2.ValidatorHash
 valHash = Scripts.validatorHash typedValidator
 
-scrAddress :: Ledger.Address
+scrAddress :: PlutusV2.Address
 scrAddress = Scripts.validatorAddress typedValidator
 
 
 
--- some repl tests
+{-
+
+BELOW are test used in repl
+
+-}
 moveA1 = Move Row_A Col_1
 moveA2 = Move Row_A Col_2
 moveA3 = Move Row_A Col_3
