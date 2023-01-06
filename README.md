@@ -58,7 +58,7 @@ The transaction construction will happen with cardanocli-js as individual steps 
 
   - [x] game initiated with valid parameters (enforced by types)
   - [x] initiated game value must match the bet value
-  - [ ] joining value must match the bet value
+  - [x] joining value must match the bet value
   - [ ] output value goes to script
   - [ ] output gamestate is valid
     - [ ] playerTwoPubKeyHash value is added from command
@@ -77,12 +77,12 @@ The transaction construction will happen with cardanocli-js as individual steps 
 - [x] can claim win
 
   - [x] is game in winning state (enforced by types)
-  - [x] ensure output value goes to winner address
+  - [ ] ensure output value goes to winner address
 
 - [x] can claim tie
 
   - [x] is game in tied state (enforced by types)
-  - [x] ensure output values are split between players
+  - [ ] ensure output values are split between players
 
 - [ ] can cancel initiated game
 

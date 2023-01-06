@@ -399,24 +399,39 @@ validCommandForGameState gs command ctx =  case gs of
 
 
 
-
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
 canJoinGame gs _ ctx =  case gs of 
-    GameInitiated {..} -> gameBetMustMatchTheValue && True
+    GameInitiated {..} -> gameBetMustMatchTheValue && outputValueOnScriptMustBeDoubleTheBet
         where 
             -- the player initiating the game needs to match the value with the bet
             gameBetMustMatchTheValue :: Bool
             gameBetMustMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
                                         $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == getInputScriptValue ctx
 
-
-            joinValueMustMatchTheBet :: Bool
-            joinValueMustMatchTheBet = traceError "joinValueMustMatchTheBet Not yet implemented" 
-
+            outputValueOnScriptMustBeDoubleTheBet :: Bool
+            -- naive approach
+            -- getContinuingOutputs and ensure the value has doubled
+            -- take script value or value in bet ?
+            outputValueOnScriptMustBeDoubleTheBet = let expectedAdaValue = Ada.fromValue $ Ada.lovelaceValueOf (2 * giBetInAda * 1000000)
+                                                        in traceIfFalse "Bet is not matched, player cannot join!"  
+                                                        $ expectedAdaValue == Ada.fromValue ( getOutputScriptValue ctx)
                                         
     _                  -> traceError "expected GameInitiated" 
+
+
+{-# INLINABLE getOutputScriptValue #-}
+getOutputScriptValue :: PlutusV2.ScriptContext -> PlutusV2.Value
+-- output ensure there is only 1 and return value
+-- what about if multiple games are played at once in a single transaction ? not supported at this time
+getOutputScriptValue ctx = PlutusV2.txOutValue scriptTxOut
+        where
+            scriptTxouts = PlutusV2.getContinuingOutputs ctx
+            scriptTxOut = case scriptTxouts of
+                            [i] -> i
+                            _   -> traceError "expected exactly one script output"   
+
 
 
 {-# INLINABLE getInputScriptValue #-}
