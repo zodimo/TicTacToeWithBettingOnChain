@@ -19,7 +19,7 @@ import           PlutusTx.Prelude               hiding (Semigroup(..), unless)
 --Contract Monad
 import           Plutus.Contract               
 --Ledger 
--- import           Ledger                         hiding (singleton)
+import           Ledger                         hiding (singleton)
 -- import qualified Ledger.Address                 as Address
 -- import           Ledger.Constraints             as Constraints              -- Same library name, different functions for V1 and V2 in some cases
 --import qualified Ledger.Scripts               as Scripts               
@@ -208,16 +208,56 @@ unwrapMovesMade (MovesMade a) = a
 unwrapMoves :: Moves -> [Move]
 unwrapMoves (Moves a) = a
 
+{-# INLINABLE isMoveMadeInTopRow #-}
+isMoveMadeInTopRow:: MoveMade ->Bool
+isMoveMadeInTopRow (MoveMade _ (Move row _)) = case row of 
+        Row_A  -> True
+        _      -> False
+
+{-# INLINABLE topRowFromMovesMade #-}
+topRowFromMovesMade :: [MoveMade]->[MoveMade]
+topRowFromMovesMade = filter isMoveMadeInTopRow
+    
+{-# INLINABLE isTopRowFilled #-}
+isTopRowFilled:: MovesMade -> Bool
+isTopRowFilled (MovesMade movesMade) =  length (topRowFromMovesMade movesMade ) == 3
+
+{-# INLINABLE isRowFilledByPlayer #-}
+isRowFilledByPlayer :: BuiltinByteString -> [MoveMade] -> Bool
+isRowFilledByPlayer playerPubKeyHash movesMade = 
+    (all (== playerPubKeyHash) (map (\moveMade -> mmPlayerPubKeyHash moveMade) movesMade))
+
+
+{-# INLINABLE isTopRowFilledByPlayer #-}
+isTopRowFilledByPlayer :: BuiltinByteString -> MovesMade -> Bool
+isTopRowFilledByPlayer playerPubKeyHash (MovesMade movesMade) = (isTopRowFilled (MovesMade movesMade)) &&
+        let topRow = topRowFromMovesMade movesMade
+        in isRowFilledByPlayer playerPubKeyHash topRow
 
 {-# INLINABLE isGameTied #-}
-isGameTied :: [MoveMade] -> Bool
--- do the real work
-isGameTied _ = traceError "isGameTied not implemented"
+isGameTied :: BuiltinByteString -> BuiltinByteString -> [MoveMade] -> Bool
+-- top row filled but nobody won
+isGameTied  p1pkh p2pkh movesMade =  all ( == False) [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
 
 {-# INLINABLE isGameWon #-}
-isGameWon :: [MoveMade] -> Bool
--- do the real work
-isGameWon _ = traceError "isGameWon not implemented"
+isGameWon ::  BuiltinByteString -> BuiltinByteString -> [MoveMade] -> Bool
+isGameWon  p1pkh p2pkh movesMade =  elem True [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
+
+
+{-# INLINABLE isGameWonByPlayer #-}
+isGameWonByPlayer :: BuiltinByteString -> MovesMade -> Bool
+-- top row filled by same player
+isGameWonByPlayer = isTopRowFilledByPlayer
+
+{-# INLINABLE getWinningPlayerPubKeyHash #-}
+getWinningPlayerPubKeyHash :: BuiltinByteString -> BuiltinByteString -> MovesMade -> BuiltinByteString
+getWinningPlayerPubKeyHash p1pkh p2pkh (MovesMade movesMade)  = 
+    case (isGameWon p1pkh p2pkh movesMade) of
+        False -> traceError "Nobody Won!"
+        True  -> case (isGameWonByPlayer p1pkh (MovesMade movesMade)) of
+            True -> p1pkh
+            _    -> p2pkh
+
 
 {-# INLINABLE isMoveAvailableInThisGame #-}
 isMoveAvailableInThisGame :: GameStateDatum -> GameActionCommandRedeemer ->Bool
@@ -236,8 +276,6 @@ playerInCommandMustMatchNextPlayerInGameState gs command = case gs of
                 $ gipPlayerAddressToMakeMove == mmcPlayerPubKeyHash 
             _                   -> traceError "expected MakeMoveCommand"
         _                   -> traceError "expected GameInProgress"
-
-
 
 -- getWinner :: Moves -> BuiltinByteString
 
@@ -267,19 +305,19 @@ makeMove :: GameStateDatum -> GameActionCommandRedeemer -> GameStateDatum
 makeMove gip command =   case gip of
     GameInProgress{..} -> case command of
         MakeMoveCommand{..} -> let movesMade =  appendToMovesMade (MoveMade mmcPlayerPubKeyHash mmcMove) (unwrapMovesMade gipMovesMade)
-                        in if isGameWon movesMade then
+                        in if isGameWon gipPlayerOnePubKeyHash gipPlayerTwoPubKeyHash movesMade then
                             GameIsWon 
-                            {giwPlayerOnePubKeyHash         = gipPlayerOnePubKeyHash 
+                            { giwPlayerOnePubKeyHash         = gipPlayerOnePubKeyHash 
                             , giwPlayerTwoPubKeyHash        = gipPlayerTwoPubKeyHash 
                             , giwBetInAda                   = gipBetInAda 
                             , giwGameMaxIntervalInSeconds   = gipGameMaxIntervalInSeconds 
                             , giwOccurredAtPosixTime        = gipOccurredAtPosixTime 
-                            , giwWinningPlayerAddress       = gipPlayerOnePubKeyHash -- do the real calc to get the winner
+                            , giwWinningPlayerAddress       = getWinningPlayerPubKeyHash  gipPlayerOnePubKeyHash gipPlayerTwoPubKeyHash (MovesMade movesMade)
                             , giwMovesMade                  = MovesMade movesMade
 
                             }
                             else ( 
-                                if isGameTied movesMade then
+                                if isGameTied gipPlayerOnePubKeyHash gipPlayerTwoPubKeyHash movesMade then
                                     GameIsTied
                                     { gitPlayerOnePubKeyHash        = gipPlayerOnePubKeyHash 
                                     , gitPlayerTwoPubKeyHash        = gipPlayerTwoPubKeyHash 
@@ -358,12 +396,34 @@ validCommandForGameState gs command ctx =  case gs of
 -- GAME constraint input game state + command params = output game state
 -- TX Contraint Constraints.mustPayToTheScript 
 
+
+
+
+
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
 canJoinGame gs _ ctx =  case gs of 
     GameInitiated {..} -> gameBetMustMatchTheValue && True
         where 
+            -- the player initiating the game needs to match the value with the bet
+            gameBetMustMatchTheValue :: Bool
+            gameBetMustMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
+                                        $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == getInputScriptValue ctx
+
+
+            joinValueMustMatchTheBet :: Bool
+            joinValueMustMatchTheBet = traceError "joinValueMustMatchTheBet Not yet implemented" 
+
+                                        
+    _                  -> traceError "expected GameInitiated" 
+
+
+{-# INLINABLE getInputScriptValue #-}
+getInputScriptValue :: PlutusV2.ScriptContext -> PlutusV2.Value
+getInputScriptValue ctx = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
+        where            
+            {- maybe refactor to use findOwnInput :: ScriptContext -> Maybe TxInInfo -}
             info :: PlutusV2.TxInfo
             info = PlutusV2.scriptContextTxInfo ctx
 
@@ -372,7 +432,7 @@ canJoinGame gs _ ctx =  case gs of
                                                 PlutusV2.NoOutputDatum        -> False
                                                 _    -> True
                                                 
-            getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
+            getTxInInfoWithDatum :: [PlutusV2.TxInInfo] -> PlutusV2.TxInInfo
             getTxInInfoWithDatum txInInfos = let 
                                                 xs = filter hasTxInInfoDatum txInInfos
                                             in
@@ -387,24 +447,6 @@ canJoinGame gs _ ctx =  case gs of
             -- get the scriptInputTxInInfo
             scriptInputTxInInfo :: PlutusV2.TxInInfo
             scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
-
-            -- get the value of the scriptInputTxInInfo 
-            valueInScriptUtxo :: PlutusV2.Value
-            valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
-
-            -- the player initiating the game needs to match the value with the bet
-            gameBetMustMatchTheValue :: Bool
-            gameBetMustMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
-                                        $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == valueInScriptUtxo
-
-
-            joinValueMustMatchTheBet :: Bool
-            joinValueMustMatchTheBet = traceError "joinValueMustMatchTheBet Not yet implemented" 
-
-                                        
-    _                  -> traceError "expected GameInitiated" 
-
-
 
 
 {-
@@ -480,15 +522,51 @@ enoughTimeHasPassed gs txTimeRange = True || case gs of
 -- mustPayToPubKey
 {-# INLINABLE canClaimWin #-}
 canClaimWin :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canClaimWin _ _ _ = True
+canClaimWin gs command ctx = case gs of 
+    GameIsWon {..}          ->  let 
+                                    winnerPubKeyHash = PubKeyHash giwWinningPlayerAddress   
+                                    -- value in script of double the bet ?                             
+                                    -- winningValue = (Ada.lovelaceValueOf (giBetInAda*1000000*2))
+                                    winningValue = getInputScriptValue ctx
+                                    valuePayToWinner = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) winnerPubKeyHash
+                                    in 
+                                        -- Very NAIVE!!
+                                        -- the value paid to winner may be more that the bet as it may include the change   
+                                        traceIfFalse "Winner is not getting paid!"  (Ada.fromValue winningValue >= Ada.fromValue valuePayToWinner)
+                                                          
+    _                       -> traceError "expected game state GameIsWon" 
+
+        
+            
+
 
 -- validate output
 -- value is split evenly
 -- mustPayToPubKey
 {-# INLINABLE canClaimTie #-}
 canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canClaimTie _ _ _ = True
+canClaimTie gs command ctx = case gs of 
+    GameIsTied {..}          ->  let 
+                                    player1PubKeyHash = PubKeyHash gitPlayerOnePubKeyHash   
+                                    player2PubKeyHash = PubKeyHash gitPlayerTwoPubKeyHash   
+                        
+                                    -- refund of bets
+                                    payouts = Ada.lovelaceValueOf (gitBetInAda*1000000)
+                                    -- winningValue = (Ada.lovelaceValueOf (giBetInAda*1000000*2))
+                                    -- winningValue = getInputScriptValue ctx
+                                    valuePayToPlayer1 = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player1PubKeyHash
+                                    valuePayToPlayer2 = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player2PubKeyHash
+                              
+                                    in 
+                                        -- Very NAIVE!!
+                                        -- the value paid to each player may be more that the bet as it may include the change   
+                                        traceIfFalse "Bets are not being refunded!"  
+                                        $ (Ada.fromValue payouts >= Ada.fromValue valuePayToPlayer1) &&
+                                        (Ada.fromValue payouts >= Ada.fromValue valuePayToPlayer2) 
+                                                          
+    _                       -> traceError "expected game state GameIsTied" 
 
+        
 
 {- 
 This section is where the logic of the game will be duplicated from the dapp.
@@ -563,11 +641,38 @@ shouldBeTrue = isMoveAvailable moveA3 moves1
 player1pkh = "player1" :: BuiltinByteString
 player2pkh = "player2" :: BuiltinByteString
 
-move1 = moveA3
-moveMade1 = MoveMade player1pkh move1
 
+moveMadeP1A1 = MoveMade player1pkh moveA1
+moveMadeP1A2 = MoveMade player1pkh moveA2
+moveMadeP1A3 = MoveMade player1pkh moveA3
 
+moveMadeP1B1 = MoveMade player1pkh moveB1
+moveMadeP1B2 = MoveMade player1pkh moveB2
+moveMadeP1B3 = MoveMade player1pkh moveB3
 
+moveMadeP1C1 = MoveMade player1pkh moveC1
+moveMadeP1C2 = MoveMade player1pkh moveC2
+moveMadeP1C3 = MoveMade player1pkh moveC3
+
+moveMadeP2A1 = MoveMade player2pkh moveA1
+moveMadeP2A2 = MoveMade player2pkh moveA2
+moveMadeP2A3 = MoveMade player2pkh moveA3
+
+moveMadeP2B1 = MoveMade player2pkh moveB1
+moveMadeP2B2 = MoveMade player2pkh moveB2
+moveMadeP2B3 = MoveMade player2pkh moveB3
+
+moveMadeP2C1 = MoveMade player2pkh moveC1
+moveMadeP2C2 = MoveMade player2pkh moveC2
+moveMadeP2C3 = MoveMade player2pkh moveC3
+
+winningGameMoves = 
+    [ moveMadeP1A1
+    , moveMadeP2B2
+    , moveMadeP1A2
+    , moveMadeP2B3
+    , moveMadeP1A3
+    ]
 
 gameInProgress1 = GameInProgress
     { gipPlayerOnePubKeyHash         = player1pkh
