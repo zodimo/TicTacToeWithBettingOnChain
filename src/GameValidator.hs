@@ -527,12 +527,13 @@ canClaimWin gs command ctx = case gs of
                                     winnerPubKeyHash = PubKeyHash giwWinningPlayerAddress   
                                     -- value in script of double the bet ?                             
                                     -- winningValue = (Ada.lovelaceValueOf (giBetInAda*1000000*2))
-                                    winningValue = getInputScriptValue ctx
+                                    winningValueInAda = Ada.fromValue $ getInputScriptValue ctx
                                     valuePayToWinner = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) winnerPubKeyHash
                                     in 
                                         -- Very NAIVE!!
                                         -- the value paid to winner may be more that the bet as it may include the change   
-                                        traceIfFalse "Winner is not getting paid!"  (Ada.fromValue winningValue >= Ada.fromValue valuePayToWinner)
+                                        traceIfFalse "Winner is not getting paid!"  
+                                        $ winningValueInAda <= Ada.fromValue valuePayToWinner
                                                           
     _                       -> traceError "expected game state GameIsWon" 
 
@@ -551,7 +552,7 @@ canClaimTie gs command ctx = case gs of
                                     player2PubKeyHash = PubKeyHash gitPlayerTwoPubKeyHash   
                         
                                     -- refund of bets
-                                    payouts = Ada.lovelaceValueOf (gitBetInAda*1000000)
+                                    payoutValueInAda = Ada.fromValue $ Ada.lovelaceValueOf (gitBetInAda*1000000)
                                     -- winningValue = (Ada.lovelaceValueOf (giBetInAda*1000000*2))
                                     -- winningValue = getInputScriptValue ctx
                                     valuePayToPlayer1 = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player1PubKeyHash
@@ -561,8 +562,10 @@ canClaimTie gs command ctx = case gs of
                                         -- Very NAIVE!!
                                         -- the value paid to each player may be more that the bet as it may include the change   
                                         traceIfFalse "Bets are not being refunded!"  
-                                        $ (Ada.fromValue payouts >= Ada.fromValue valuePayToPlayer1) &&
-                                        (Ada.fromValue payouts >= Ada.fromValue valuePayToPlayer2) 
+                                        $ (payoutValueInAda <= Ada.fromValue valuePayToPlayer1) &&
+                                        (payoutValueInAda <= Ada.fromValue valuePayToPlayer2)
+                                        
+                                        
                                                           
     _                       -> traceError "expected game state GameIsTied" 
 
