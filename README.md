@@ -94,5 +94,5 @@ The transaction construction will happen with cardanocli-js as individual steps 
 
   - [x] game state must be in in-progrogress state ( ensure by types)
   - [ ] has enough time passed as specified.[stuck here with tx intervals]
-  - [ ] determine winner
-  - [ ] output value goes to winner
+  - [x] determine winner
+  - [x] output value goes to winner

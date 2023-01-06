@@ -512,13 +512,44 @@ canMakeMove gs command _ =
 -- mustPayToPubKey
 {-# INLINABLE canCancelInProgressGame #-}
 canCancelInProgressGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canCancelInProgressGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && True
+canCancelInProgressGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && winnerByTimeoutIsPaid gs ctx
     where 
         info :: PlutusV2.TxInfo
         info = PlutusV2.scriptContextTxInfo ctx
 
         txTimeRange :: PlutusV2.POSIXTimeRange
         txTimeRange =  PlutusV2.txInfoValidRange info
+
+
+
+-- {-# INLINABLE switchPLayer #-}
+-- switchPLayer :: GameStateDatum BuiltinByteString -> BuiltinByteString
+
+{-# INLINABLE getWinnerPubKeyHashByTimeout #-}
+getWinnerPubKeyHashByTimeout :: GameStateDatum -> PubKeyHash
+getWinnerPubKeyHashByTimeout gs = case gs of 
+            GameInitiated{..}   ->  PubKeyHash giPlayerOnePubKeyHash
+            GameInProgress{..}  ->  if gipPlayerOnePubKeyHash == gipPlayerAddressToMakeMove 
+                                    then PubKeyHash gipPlayerTwoPubKeyHash 
+                                    else PubKeyHash gipPlayerOnePubKeyHash
+            _                   -> traceError "Expected game state if either GameInitiated or GameInProgress !"
+
+
+
+{-# INLINABLE winnerByTimeoutIsPaid #-}
+winnerByTimeoutIsPaid :: GameStateDatum -> PlutusV2.ScriptContext -> Bool
+winnerByTimeoutIsPaid gs ctx = let  winnerPubKeyHash = getWinnerPubKeyHashByTimeout gs
+                                    winningValueInAda = getInputScriptValue ctx
+                                    valuePayToWinner = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) winnerPubKeyHash
+                                    in 
+                                        -- Very NAIVE!!
+                                        -- the value paid to winner may be more that the bet as it may include the change  
+                                        -- bypassed for now with True ||
+                                        traceIfFalse "Winner is not getting paid!" 
+                                        $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
+
+
+                
 
 
 {-# INLINABLE enoughTimeHasPassed #-}
