@@ -334,7 +334,7 @@ validCommandForGameState gs command ctx =  case gs of
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
 canJoinGame gs _ ctx =  case gs of 
-    GameInitiated {..} -> gameBetMatchTheValue && True
+    GameInitiated {..} -> gameBetMustMatchTheValue && True
         where 
             info :: PlutusV2.TxInfo
             info = PlutusV2.scriptContextTxInfo ctx
@@ -365,9 +365,14 @@ canJoinGame gs _ ctx =  case gs of
             valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
 
             -- the player initiating the game needs to match the value with the bet
-            gameBetMatchTheValue :: Bool
-            gameBetMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
+            gameBetMustMatchTheValue :: Bool
+            gameBetMustMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
                                         $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == valueInScriptUtxo
+
+
+            joinValueMustMatchTheBet :: Bool
+            joinValueMustMatchTheBet = traceError "joinValueMustMatchTheBet Not yet implemented" 
+
                                         
     _                  -> traceError "expected GameInitiated" 
 
@@ -412,7 +417,18 @@ playerOneBetIsRefunded _ _ = True
 {-# INLINABLE canMakeMove #-}
 canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canMakeMove gs command _ = True
-canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) && True -- && True is placholder for more checks
+canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) 
+    && (playerInCommandMustMatchNextPlayerInGameState gs command) && True -- && True is placholder for more checks
+
+{-# INLINABLE playerInCommandMustMatchNextPlayerInGameState #-}
+playerInCommandMustMatchNextPlayerInGameState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+playerInCommandMustMatchNextPlayerInGameState gs command = case gs of 
+        GameInProgress {..}           -> case command of
+            MakeMoveCommand {..}          ->  traceIfFalse "Wrong player playing now!"
+                $ gipPlayerAddressToMakeMove == mmcPlayerPubKeyHash 
+            _                   -> traceError "expected MakeMoveCommand"
+        _                   -> traceError "expected GameInProgress"
+
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
 -- validate output , the winner is the player who is waiting for the other player to play

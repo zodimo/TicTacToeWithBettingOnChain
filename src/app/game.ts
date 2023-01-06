@@ -124,7 +124,7 @@ export class Game {
 
     const gameState = new GameInProgress(
       currentGamestate.playerOnePubKeyHash,
-      params.playerTwoPubKeyHash,
+      playerTwoPubKeyHash,
       currentGamestate.betInAda,
       currentGamestate.gameMaxIntervalInSeconds,
       postixTimeNow,
