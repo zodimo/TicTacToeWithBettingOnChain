@@ -65,6 +65,7 @@ The transaction construction will happen with cardanocli-js as individual steps 
   - [x] current gamestate with valid params (enforced by types)
   - [ ] the move in the command matches the next player to make move.
   - [x] ensure game is playable [ not won or tied , ensured by types]
+  - [x] ensure designated space is not occupied
   - [ ] check output game state valid after making move
     - [ ] isGameWon
     - [ ] isGameTied
