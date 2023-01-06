@@ -29,6 +29,7 @@ import { StakeAddress } from "./command/stake-address.js";
 import { StakeComponent } from "./command/stake-address/stake-component.js";
 import { OutputAs } from "./command/transaction/build/output-as.js";
 import { PaymentVerificationKey } from "./command/address/key-hash.js";
+import { Tip } from "./query.js";
 
 export interface CardanoCliOptionsInterface {
   cliPath: string | null;
@@ -213,7 +214,7 @@ export class CardanoCli {
 
     return utxoList;
   }
-  
+
   pubKeyHashFromVerificationKeyFile(verificationKeyFile: string): string {
     //higher order function
     return this.address()
@@ -554,5 +555,29 @@ export class CardanoCli {
       })
       .runCommand();
     return outFile;
+  }
+
+  queryTip(): Tip {
+    //higher order function
+    let UID = Math.random().toString(36).slice(2, 9);
+    const tempOutFileName = createTempFilename(`query_tip_${UID}.json`);
+    this.query()
+      .tip((builder) => {
+        return builder.withOutFile(new OutFile(tempOutFileName));
+      })
+      .runCommand();
+
+    const tip = Tip.fromJson(this.runCommand(`cat ${tempOutFileName}`));
+
+    if (!this.debug) {
+      // remove temp file.
+      fs.rmSync(tempOutFileName);
+    }
+
+    return tip;
+  }
+  getCurrentSlotFromQueryTip(): number {
+    //higher order function
+    return this.queryTip().slot;
   }
 }
