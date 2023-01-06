@@ -39,7 +39,8 @@ export const sendStartGameCommandToScriptTransaction: (
         TxOutDatum.inlineFile(gameStateDatumFile)
       ),
     ])
-    .withChangeAddress(playerWallet.paymentAddr);
+    .withChangeAddress(playerWallet.paymentAddr)
+    .withInvalidBefore(cardanoCli.getCurrentSlotFromQueryTip());
 
   const txBodyToSign = cardanoCli.transactionBuild(transactionBuildOptions);
   //sign

@@ -52,7 +52,8 @@ export const sendMakeMoveCommandToScriptTransaction: (
     .withTxOut(
       new TxOutParameter(new TxOut(scriptAddress, outputValueInLovelace), TxOutDatum.inlineFile(gameStateDatumFile))
     )
-    .withChangeAddress(playerWallet.paymentAddr);
+    .withChangeAddress(playerWallet.paymentAddr)
+    .withInvalidBefore(cardanoCli.getCurrentSlotFromQueryTip());
 
   //draft transaction
   const draftTransactionBodyFile = cardanoCli.transactionBuild(transactionBuildOptions);
