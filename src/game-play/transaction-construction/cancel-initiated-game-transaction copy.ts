@@ -29,7 +29,7 @@ export const sendCancelInitiatedGameCommandToScriptTransaction: (
 ) => UtxoId = (playerWallet, scriptAddress, scriptFile, gameStateUtxoId, playerWallets) => {
   console.log("#######################################");
   console.log("######## CANCEL INITIATED GAME ########");
-  console.log("###########################");
+  console.log("#######################################");
 
   assert.equal(playerWallets.length == 2, true, "Expected both player wallets");
 
