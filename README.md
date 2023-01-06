@@ -69,19 +69,19 @@ The transaction construction will happen with cardanocli-js as individual steps 
   - [ ] check output game state valid after making move
     - [ ] isGameWon
     - [ ] isGameTied
-  - [ ] can claim win
-    - [x] is game in winning state (enforced by types)
-    - [ ] ensure output value goes to winner address
-  - [ ] can claim tie
-    - [x] is game in tied state (enforced by types)
-    - [ ] ensure output values are split between players
+- [ ] can claim win
+  - [x] is game in winning state (enforced by types)
+  - [ ] ensure output value goes to winner address
+- [ ] can claim tie
+  - [x] is game in tied state (enforced by types)
+  - [ ] ensure output values are split between players
 
-  - [ ] can cancel initiated game
-    - [x] game state must be in initiated state ( ensure by types)
-    - [ ] has enough time passed as specified.[stuck here with tx intervals]
-    - [ ] output value return to playerOne
-  - [ ] can cancel in progress game
-    - [x] game state must be in in-progrogress state ( ensure by types)
-    - [ ] has enough time passed as specified.[stuck here with tx intervals]
-    - [ ] determine winner
-    - [ ] output value goes to winner
+- [ ] can cancel initiated game
+  - [x] game state must be in initiated state ( ensure by types)
+  - [ ] has enough time passed as specified.[stuck here with tx intervals]
+  - [ ] output value return to playerOne
+- [ ] can cancel in progress game
+  - [x] game state must be in in-progrogress state ( ensure by types)
+  - [ ] has enough time passed as specified.[stuck here with tx intervals]
+  - [ ] determine winner
+  - [ ] output value goes to winner
