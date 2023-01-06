@@ -293,31 +293,32 @@ validCommandForGameState gs command ctx =  case gs of
                                 GameIsWon {}                -> validGameIsWonCommand gs command ctx
                                 GameIsTied {}               -> validGameIsTiedCommand gs command ctx
         
-{-# INLINABLE validGameInitiatedCommand #-}
-validGameInitiatedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validGameInitiatedCommand gs command ctx = case command of
-                                JoinGameCommand {}          -> canJoinGame gs command ctx
-                                CancelInitiatedGameCommand  -> canCancelInitiatedGame gs command ctx
-                                _                           -> False
+    where 
+        validGameInitiatedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+        validGameInitiatedCommand gs command ctx = case command of
+                                        JoinGameCommand {}          -> canJoinGame gs command ctx
+                                        CancelInitiatedGameCommand  -> canCancelInitiatedGame gs command ctx
+                                        _                           -> traceError "Invalid command for gamestate GameInitiated"
                                 
-{-# INLINABLE validGameInProgress #-}
-validGameInProgress :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validGameInProgress gs command ctx = case command of
-                                MakeMoveCommand {}          -> canMakeMove gs command ctx
-                                CancelInProgressGameCommand -> canCancelInProgressGame gs command ctx
-                                _                           -> False
 
-{-# INLINABLE validGameIsWonCommand #-}
-validGameIsWonCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validGameIsWonCommand gs command ctx = case command of
-                                ClaimWinCommand             -> canClaimWin gs command ctx
-                                _                           -> False
+        validGameInProgress :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+        -- validGameInProgress gs command ctx = case command of
+        validGameInProgress gs command ctx = case command of
+                                        MakeMoveCommand {}          -> canMakeMove gs command ctx
+                                        CancelInProgressGameCommand -> canCancelInProgressGame gs command ctx
+                                        _                           -> traceError "Invalid command for gamestate GameInProgress"
 
-{-# INLINABLE validGameIsTiedCommand #-}
-validGameIsTiedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-validGameIsTiedCommand gs command ctx = case command of
-                                ClaimTieCommand             -> canClaimTie gs command ctx
-                                _                           -> False
+
+        validGameIsWonCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+        validGameIsWonCommand gs command ctx = case command of
+                                        ClaimWinCommand             -> canClaimWin gs command ctx
+                                        _                           -> traceError "Invalid command for gamestate GameIsWon"
+
+
+        validGameIsTiedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+        validGameIsTiedCommand gs command ctx = case command of
+                                        ClaimTieCommand             -> canClaimTie gs command ctx
+                                        _                           -> traceError "Invalid command for gamestate GameIsTied"
 
 {- LETS GET TO BUSINESS -}
 
@@ -331,46 +332,43 @@ validGameIsTiedCommand gs command ctx = case command of
 
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canJoinGame _ _ _ = True
--- canJoinGame gs _ ctx = gameBetMatchTheValue gs valueInScriptUtxo && True
---     where 
---         info :: PlutusV2.TxInfo
---         info = PlutusV2.scriptContextTxInfo ctx
+-- canJoinGame _ _ _ = True
+canJoinGame gs _ ctx = gameBetMatchTheValue && True
+    where 
+        info :: PlutusV2.TxInfo
+        info = PlutusV2.scriptContextTxInfo ctx
 
+        hasTxInInfoDatum :: PlutusV2.TxInInfo -> Bool
+        hasTxInInfoDatum txInInfo =  case (PlutusV2.txOutDatum . PlutusV2.txInInfoResolved $ txInInfo) of
+                                            PlutusV2.NoOutputDatum        -> False
+                                            _    -> True
+                                            
+        getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
+        getTxInInfoWithDatum txInInfos = let 
+                                            xs = filter hasTxInInfoDatum txInInfos
+                                          in
+                                            case xs of
+                                                [i] -> i
+                                                _   -> traceError "expected exactly one input with datum"   
 
+        -- filter function
+        getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
+        getSriptInputTxInInfoFromTxInfo txInfo = getTxInInfoWithDatum (PlutusV2.txInfoInputs txInfo)
         
+        -- get the scriptInputTxInInfo
+        scriptInputTxInInfo :: PlutusV2.TxInInfo
+        scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
 
---         hasTxInInfoDatum :: PlutusV2.TxInInfo -> Bool
---         hasTxInInfoDatum txInIfno =  case (PlutusV2.txOutDatumHash . PlutusV2.txInInfoResolved txInIfno) of
---                                             Nothing -> False
---                                             Just _  -> True
+        -- get the value of the scriptInputTxInInfo 
+        valueInScriptUtxo :: PlutusV2.Value
+        valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
 
---         getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
---         getTxInInfoWithDatum txInIndfos= filter hasTxInInfoDatumtxInIndfos
-    
-
---         -- filter function
---         getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
---         getSriptInputTxInInfoFromTxInfo txInfo = head(getTxInInfoWithDatum $  PlutusV2.txInfoInputs txInfo)
-        
---         -- get the scriptInputTxInInfo
---         scriptInputTxInInfo :: PlutusV2.TxInInfo
---         scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
-
---         -- get the value of the scriptInputTxInInfo 
---         valueInScriptUtxo :: PlutusV2.Value
---         valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
-
-
--- {-
---     assertInputGameBetMatchTheValue
---     the player initiating the game needs to match the value with the bet
--- -}
--- {-# INLINABLE gameBetMatchTheValue #-}
--- gameBetMatchTheValue :: GameStateDatum -> PlutusV2.Value -> Bool
--- gameBetMatchTheValue gs value = case gs of
---                                 GameInitiated {..}          -> Ada.lovelaceValueOf giBetInAda == value
---                                 _                           -> traceError "Invalid initiated game. Value does not match bet"
+        -- the player initiating the game needs to match the value with the bet
+        gameBetMatchTheValue :: Bool
+        gameBetMatchTheValue = case gs of
+                                        GameInitiated {..} -> traceIfFalse "Invalid initiated game. Value does not match bet" 
+                                                                $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == valueInScriptUtxo
+                                        _                  -> traceError "expected GameInitiated" 
 
 
 
@@ -391,16 +389,20 @@ canJoinGame _ _ _ = True
 
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
--- validate output goes back to original wallet
+-- validate output goes back to original wallet - aka playerOnePubKeyHash
 {-# INLINABLE canCancelInitiatedGame #-}
 canCancelInitiatedGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canCancelInitiatedGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && True
+canCancelInitiatedGame gs command ctx = enoughTimeHasPassed gs txTimeRange && playerOneBetIsRefunded gs ctx 
     where 
         info :: PlutusV2.TxInfo
         info = PlutusV2.scriptContextTxInfo ctx
 
         txTimeRange :: PlutusV2.POSIXTimeRange
         txTimeRange =  PlutusV2.txInfoValidRange info
+
+{-# INLINABLE playerOneBetIsRefunded #-}
+playerOneBetIsRefunded :: GameStateDatum->PlutusV2.ScriptContext->Bool
+playerOneBetIsRefunded _ _ = True
 
 -- move not made before
 -- validate output
@@ -423,7 +425,6 @@ canCancelInProgressGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && 
 
         txTimeRange :: PlutusV2.POSIXTimeRange
         txTimeRange =  PlutusV2.txInfoValidRange info
-
 
 
 {-# INLINABLE enoughTimeHasPassed #-}
