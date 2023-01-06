@@ -333,42 +333,43 @@ validCommandForGameState gs command ctx =  case gs of
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
-canJoinGame gs _ ctx = gameBetMatchTheValue && True
-    where 
-        info :: PlutusV2.TxInfo
-        info = PlutusV2.scriptContextTxInfo ctx
+canJoinGame gs _ ctx =  case gs of 
+    GameInitiated {..} -> gameBetMatchTheValue && True
+        where 
+            info :: PlutusV2.TxInfo
+            info = PlutusV2.scriptContextTxInfo ctx
 
-        hasTxInInfoDatum :: PlutusV2.TxInInfo -> Bool
-        hasTxInInfoDatum txInInfo =  case (PlutusV2.txOutDatum . PlutusV2.txInInfoResolved $ txInInfo) of
-                                            PlutusV2.NoOutputDatum        -> False
-                                            _    -> True
-                                            
-        getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
-        getTxInInfoWithDatum txInInfos = let 
-                                            xs = filter hasTxInInfoDatum txInInfos
-                                          in
-                                            case xs of
-                                                [i] -> i
-                                                _   -> traceError "expected exactly one input with datum"   
+            hasTxInInfoDatum :: PlutusV2.TxInInfo -> Bool
+            hasTxInInfoDatum txInInfo =  case (PlutusV2.txOutDatum . PlutusV2.txInInfoResolved $ txInInfo) of
+                                                PlutusV2.NoOutputDatum        -> False
+                                                _    -> True
+                                                
+            getTxInInfoWithDatum :: [PlutusV2.TxInInfo]->PlutusV2.TxInInfo
+            getTxInInfoWithDatum txInInfos = let 
+                                                xs = filter hasTxInInfoDatum txInInfos
+                                            in
+                                                case xs of
+                                                    [i] -> i
+                                                    _   -> traceError "expected exactly one input with datum"   
 
-        -- filter function
-        getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
-        getSriptInputTxInInfoFromTxInfo txInfo = getTxInInfoWithDatum (PlutusV2.txInfoInputs txInfo)
-        
-        -- get the scriptInputTxInInfo
-        scriptInputTxInInfo :: PlutusV2.TxInInfo
-        scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
+            -- filter function
+            getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
+            getSriptInputTxInInfoFromTxInfo txInfo = getTxInInfoWithDatum (PlutusV2.txInfoInputs txInfo)
+            
+            -- get the scriptInputTxInInfo
+            scriptInputTxInInfo :: PlutusV2.TxInInfo
+            scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
 
-        -- get the value of the scriptInputTxInInfo 
-        valueInScriptUtxo :: PlutusV2.Value
-        valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
+            -- get the value of the scriptInputTxInInfo 
+            valueInScriptUtxo :: PlutusV2.Value
+            valueInScriptUtxo = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scriptInputTxInInfo
 
-        -- the player initiating the game needs to match the value with the bet
-        gameBetMatchTheValue :: Bool
-        gameBetMatchTheValue = case gs of
-                                        GameInitiated {..} -> traceIfFalse "Invalid initiated game. Value does not match bet" 
-                                                                $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == valueInScriptUtxo
-                                        _                  -> traceError "expected GameInitiated" 
+            -- the player initiating the game needs to match the value with the bet
+            gameBetMatchTheValue :: Bool
+            gameBetMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
+                                        $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == valueInScriptUtxo
+                                        
+    _                  -> traceError "expected GameInitiated" 
 
 
 
