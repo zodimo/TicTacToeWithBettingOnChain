@@ -42,13 +42,23 @@ Bob can now claim the winnings.
 
 The transaction construction will happen with cardanocli-js as individual steps to create the transactions to play the game and simulate async interactions.
 
-### How to builde the plutus script.
+### How to build the plutus script.
 
 - putus-apps tag for nix shell: v1.0.0
 - inside the plutus apps nix-shell, navigate back to root of this project.
 - run `cabal repl`
 - run `:l Deploy`
 - run `writeTicTacToeValidator` , this will write to testnet/ticTacToe.plutus
+
+### how to run the staged transactions
+- install `node v18`
+- run `npm install` in root of project
+- run `npx tsc` to compile all the typscript files
+- you are now ready to run the example scripts.
+- run `node dist/game-play/onchain-real/game1-win.js` for and staged game where there is a winner 
+- run `node dist/game-play/onchain-real/game2-tie.js` for and staged game where it ends in a tie 
+- run `node dist/game-play/onchain-real/game3-cancel-initiated-game.js` to initiate and cancel a game.
+- run `node dist/game-play/onchain-real/game4-cancel-inprogress-game.js` to initiate a game, join and then stop playing and cancel the game.
 
 ## Validator requirement implementation onchain
 
