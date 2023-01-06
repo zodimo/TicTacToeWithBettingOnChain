@@ -223,6 +223,19 @@ isMoveAvailableInThisGame gip command  = case gip of
             MakeMoveCommand{..} -> traceIfFalse "Illegal move: position is occupied." (isMoveAvailable mmcMove ( movesMadeToMoves (unwrapMovesMade gipMovesMade)))
             _                   -> traceError "expected MakeMoveCommand"
     _                  -> traceError "expected GameInProgress"
+
+
+{-# INLINABLE playerInCommandMustMatchNextPlayerInGameState #-}
+playerInCommandMustMatchNextPlayerInGameState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
+playerInCommandMustMatchNextPlayerInGameState gs command = case gs of 
+        GameInProgress {..}           -> case command of
+            MakeMoveCommand {..}          ->  traceIfFalse "Wrong player playing now!"
+                $ gipPlayerAddressToMakeMove == mmcPlayerPubKeyHash 
+            _                   -> traceError "expected MakeMoveCommand"
+        _                   -> traceError "expected GameInProgress"
+
+
+
 -- getWinner :: Moves -> BuiltinByteString
 
 
@@ -416,18 +429,10 @@ playerOneBetIsRefunded _ _ = True
 -- output is still in progress, or won , or tied
 {-# INLINABLE canMakeMove #-}
 canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
--- canMakeMove gs command _ = True
-canMakeMove gs command _ = (isMoveAvailableInThisGame gs command) 
-    && (playerInCommandMustMatchNextPlayerInGameState gs command) && True -- && True is placholder for more checks
-
-{-# INLINABLE playerInCommandMustMatchNextPlayerInGameState #-}
-playerInCommandMustMatchNextPlayerInGameState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
-playerInCommandMustMatchNextPlayerInGameState gs command = case gs of 
-        GameInProgress {..}           -> case command of
-            MakeMoveCommand {..}          ->  traceIfFalse "Wrong player playing now!"
-                $ gipPlayerAddressToMakeMove == mmcPlayerPubKeyHash 
-            _                   -> traceError "expected MakeMoveCommand"
-        _                   -> traceError "expected GameInProgress"
+canMakeMove gs command _ = 
+    (isMoveAvailableInThisGame gs command) &&
+    (playerInCommandMustMatchNextPlayerInGameState gs command) && 
+    True -- && True is placholder for more checks
 
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
