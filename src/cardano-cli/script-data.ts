@@ -44,6 +44,10 @@ export class DataBytes extends ScriptData {
     super();
   }
 
+  static fromBytes(bytes: Uint8Array): DataBytes {
+    return new DataBytes(bytes);
+  }
+
   static fromString(value: string): DataBytes {
     const bytes = Buffer.from(value, "utf-8");
     return new DataBytes(bytes);

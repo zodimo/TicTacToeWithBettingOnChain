@@ -1,5 +1,5 @@
 import { Game } from "../../app/game.js";
-import { GameStateFactory, MakeMoveCommand, MakeMoveParams, Move } from "../../app/game-data.js";
+import { GameStateFactory, MakeMoveCommand, MakeMoveParams, Move, PubKeyHash } from "../../app/game-data.js";
 import { RequiredSigner } from "../../cardano-cli/command/transaction/build/required-signer.js";
 import { TxOut, TxOutDatum, TxOutParameter } from "../../cardano-cli/command/transaction/build/tx-out.js";
 import { SigningKeyFile } from "../../cardano-cli/command/transaction/sign/signing-key-file.js";
@@ -36,7 +36,7 @@ export const sendMakeMoveCommandToScriptTransaction: (
   const gameStateFromScriptData = new GameStateFactory().fromScriptData(scriptData);
   const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
 
-  const makeMoveParams = new MakeMoveParams(playerPubKeyHash, move);
+  const makeMoveParams = new MakeMoveParams(PubKeyHash.fromHexString(playerPubKeyHash), move);
   const command = new MakeMoveCommand(gameStateFromScriptData, makeMoveParams);
   const gameState = Game.handleActionCommand(command);
   const gameStateDatumFile = writeGameStateAsDatumToFile(gameState);

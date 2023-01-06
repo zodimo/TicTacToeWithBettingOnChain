@@ -36,6 +36,30 @@ export enum GameEndAction {
   CLAIM_TIE = "claim-tie",
 }
 
+export class PubKeyHash implements ToScriptDataSerialise {
+  private constructor(private bytes: Uint8Array) {}
+
+  static fromHexString(value: string): PubKeyHash {
+    if (!(value.length % 2 === 0 && /^[0-9A-F]*$/i.test(value))) {
+      throw new Error(`Not a valid hex value: ${value}`);
+    }
+    const bytes = Buffer.from(value, "hex");
+    return new PubKeyHash(bytes);
+  }
+
+  toHexString(): string {
+    return Buffer.from(this.bytes).toString("hex");
+  }
+
+  toScriptData(): Data {
+    return DataBytes.fromBytes(this.bytes);
+  }
+
+  equals(pubkeyHash: PubKeyHash): boolean {
+    return this.toHexString() == pubkeyHash.toHexString();
+  }
+}
+
 interface GameActionCommandInterface<T, U> {
   getAction(): T;
   getParameters(): U;
@@ -68,7 +92,7 @@ export class JoinGameCommand implements GameActionCommandInterface<GameAction, J
     return this.params;
   }
   toRedeemerScriptData(): Data {
-    return DataConstr.from(0, [DataBytes.fromString(this.params.playerTwoPubKeyHash)]);
+    return DataConstr.from(0, [this.params.playerTwoPubKeyHash.toScriptData()]);
   }
 
   get betInAda(): number {
@@ -88,7 +112,7 @@ export class MakeMoveCommand implements GameActionCommandInterface<GameAction, M
     return this.params;
   }
   toRedeemerScriptData(): Data {
-    return DataConstr.from(1, [DataBytes.fromString(this.params.playerPubKeyHash), this.params.move.toScriptData()]);
+    return DataConstr.from(1, [this.params.playerPubKeyHash.toScriptData(), this.params.move.toScriptData()]);
   }
 }
 
@@ -166,18 +190,18 @@ export type EndGameActionCommand =
 
 export class StartGameParams {
   constructor(
-    public readonly playerOnePubKeyHash: string,
+    public readonly playerOnePubKeyHash: PubKeyHash,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number
   ) {}
 }
 
 export class JoinGameParams {
-  constructor(public readonly playerTwoPubKeyHash: string) {}
+  constructor(public readonly playerTwoPubKeyHash: PubKeyHash) {}
 }
 
 export class MakeMoveParams {
-  constructor(public readonly playerPubKeyHash: string, public readonly move: Move) {}
+  constructor(public readonly playerPubKeyHash: PubKeyHash, public readonly move: Move) {}
 }
 
 /**
@@ -239,7 +263,7 @@ export class MovesMade implements ToScriptDataSerialise {
     return new MovesMade([]);
   }
 
-  makeMove(playerPubKeyHash: string, move: Move): MovesMade {
+  makeMove(playerPubKeyHash: PubKeyHash, move: Move): MovesMade {
     if (this.hasMoveBeenMade(move)) {
       throw new Error("Illegal move: position is occupied.");
     }
@@ -273,9 +297,9 @@ export class MovesMade implements ToScriptDataSerialise {
 }
 
 export class MoveMade implements ToScriptDataSerialise {
-  constructor(public readonly playerPubKeyHash: string, public readonly move: Move) {}
+  constructor(public readonly playerPubKeyHash: PubKeyHash, public readonly move: Move) {}
   toScriptData(): Data {
-    return DataConstr.from(0, [DataBytes.fromString(this.playerPubKeyHash), this.move.toScriptData()]);
+    return DataConstr.from(0, [this.playerPubKeyHash.toScriptData(), this.move.toScriptData()]);
   }
 }
 
@@ -288,7 +312,7 @@ enum GameStateConstuctors {
 
 export class GameInitiated implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOnePubKeyHash: string,
+    public readonly playerOnePubKeyHash: PubKeyHash,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number
@@ -296,7 +320,7 @@ export class GameInitiated implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameInitiated, [
-      DataBytes.fromString(this.playerOnePubKeyHash),
+      this.playerOnePubKeyHash.toScriptData(),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
@@ -311,23 +335,23 @@ export class GameInitiated implements ToScriptDataSerialise {
 
 export class GameInProgress implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOnePubKeyHash: string,
-    public readonly playerTwoPubKeyHash: string,
+    public readonly playerOnePubKeyHash: PubKeyHash,
+    public readonly playerTwoPubKeyHash: PubKeyHash,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
-    public readonly playerAddressToMakeMove: string,
+    public readonly playerAddressToMakeMove: PubKeyHash,
     public readonly movesMade: MovesMade
   ) {}
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameInProgress, [
-      DataBytes.fromString(this.playerOnePubKeyHash),
-      DataBytes.fromString(this.playerTwoPubKeyHash),
+      this.playerOnePubKeyHash.toScriptData(),
+      this.playerTwoPubKeyHash.toScriptData(),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
-      DataBytes.fromString(this.playerAddressToMakeMove),
+      this.playerAddressToMakeMove.toScriptData(),
       this.movesMade.toScriptData(),
     ]);
   }
@@ -339,23 +363,23 @@ export class GameInProgress implements ToScriptDataSerialise {
 
 export class GameIsWon implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOnePubKeyHash: string,
-    public readonly playerTwoPubKeyHash: string,
+    public readonly playerOnePubKeyHash: PubKeyHash,
+    public readonly playerTwoPubKeyHash: PubKeyHash,
     public readonly betInAda: number,
     public readonly gameMaxIntervalInSeconds: number,
     public readonly occurredAtPosixTime: number,
-    public readonly winningPlayerPubKeyHash: string,
+    public readonly winningPlayerPubKeyHash: PubKeyHash,
     public readonly movesMade: MovesMade
   ) {}
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameIsWon, [
-      DataBytes.fromString(this.playerOnePubKeyHash),
-      DataBytes.fromString(this.playerTwoPubKeyHash),
+      this.playerOnePubKeyHash.toScriptData(),
+      this.playerTwoPubKeyHash.toScriptData(),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.gameMaxIntervalInSeconds),
       DataNumber.fromNumber(this.occurredAtPosixTime),
-      DataBytes.fromString(this.winningPlayerPubKeyHash),
+      this.winningPlayerPubKeyHash.toScriptData(),
       this.movesMade.toScriptData(),
     ]);
   }
@@ -363,8 +387,8 @@ export class GameIsWon implements ToScriptDataSerialise {
 
 export class GameIsTied implements ToScriptDataSerialise {
   constructor(
-    public readonly playerOnePubKeyHash: string,
-    public readonly playerTwoPubKeyHash: string,
+    public readonly playerOnePubKeyHash: PubKeyHash,
+    public readonly playerTwoPubKeyHash: PubKeyHash,
     public readonly betInAda: number,
     public readonly occurredAtPosixTime: number,
     public readonly movesMade: MovesMade
@@ -372,8 +396,8 @@ export class GameIsTied implements ToScriptDataSerialise {
 
   toScriptData(): Data {
     return DataConstr.from(GameStateConstuctors.GameIsTied, [
-      DataBytes.fromString(this.playerOnePubKeyHash),
-      DataBytes.fromString(this.playerTwoPubKeyHash),
+      this.playerOnePubKeyHash.toScriptData(),
+      this.playerTwoPubKeyHash.toScriptData(),
       DataNumber.fromNumber(this.betInAda),
       DataNumber.fromNumber(this.occurredAtPosixTime),
       this.movesMade.toScriptData(),
@@ -457,7 +481,10 @@ export class MoveMadeFactory extends FromScriptDataFactory<MoveMade> {
     assert.equal(validData.getFields()[1] instanceof DataConstr, true);
     const moveData: DataConstr = validData.getFields()[1] as DataConstr;
 
-    return new MoveMade(playerPubKeyHashData.toString(), new MoveFactory().fromScriptData(moveData));
+    return new MoveMade(
+      PubKeyHash.fromHexString(playerPubKeyHashData.toHex()),
+      new MoveFactory().fromScriptData(moveData)
+    );
   }
 }
 
@@ -487,7 +514,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
       case GameStateConstuctors.GameInitiated:
         return this.createGameInitiated(validData);
 
-        case GameStateConstuctors.GameInProgress:
+      case GameStateConstuctors.GameInProgress:
         return this.createGameInProgress(validData);
 
       case GameStateConstuctors.GameIsWon:
@@ -512,7 +539,7 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const occurredAtPosixTimeData: DataNumber = data.getFields()[3] as DataNumber;
 
     return new GameInitiated(
-      playerOnePubKeyHashData.toString(),
+      PubKeyHash.fromHexString(playerOnePubKeyHashData.toHex()),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue()
@@ -542,12 +569,12 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[6] as DataConstr;
 
     return new GameInProgress(
-      playerOnePubKeyHashData.toString(),
-      playerTwoPubKeyHashData.toString(),
+      PubKeyHash.fromHexString(playerOnePubKeyHashData.toHex()),
+      PubKeyHash.fromHexString(playerTwoPubKeyHashData.toHex()),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
-      playerAddressToMakeMoveData.toString(),
+      PubKeyHash.fromHexString(playerAddressToMakeMoveData.toHex()),
       new MovesMadeFactory().fromScriptData(movesData)
     );
   }
@@ -575,12 +602,12 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[6] as DataConstr;
 
     return new GameIsWon(
-      playerOnePubKeyHashData.toString(),
-      playerTwoPubKeyHashData.toString(),
+      PubKeyHash.fromHexString(playerOnePubKeyHashData.toHex()),
+      PubKeyHash.fromHexString(playerTwoPubKeyHashData.toHex()),
       betInAdaData.getValue(),
       gameMaxIntervalInSecondsData.getValue(),
       occurredAtPosixTimeData.getValue(),
-      winningPlayerPubKeyHashData.toString(),
+      PubKeyHash.fromHexString(winningPlayerPubKeyHashData.toHex()),
       new MovesMadeFactory().fromScriptData(movesData)
     );
   }
@@ -604,8 +631,8 @@ export class GameStateFactory extends FromScriptDataFactory<GameState> {
     const movesData: DataConstr = data.getFields()[4] as DataConstr;
 
     return new GameIsTied(
-      playerOnePubKeyHashData.toString(),
-      playerTwoPubKeyHashData.toString(),
+      PubKeyHash.fromHexString(playerOnePubKeyHashData.toHex()),
+      PubKeyHash.fromHexString(playerTwoPubKeyHashData.toHex()),
       betInAdaData.getValue(),
       occurredAtPosixTimeData.getValue(),
       new MovesMadeFactory().fromScriptData(movesData)

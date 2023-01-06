@@ -77,12 +77,12 @@ The transaction construction will happen with cardanocli-js as individual steps 
 - [x] can claim win
 
   - [x] is game in winning state (enforced by types)
-  - [ ] ensure output value goes to winner address
+  - [x] ensure output value goes to winner address
 
 - [x] can claim tie
 
   - [x] is game in tied state (enforced by types)
-  - [ ] ensure output values are split between players
+  - [x] ensure output values are split between players
 
 - [ ] can cancel initiated game
 

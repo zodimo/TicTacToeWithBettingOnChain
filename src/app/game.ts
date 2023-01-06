@@ -27,6 +27,7 @@ import {
   MakeMoveCommand,
   MakeMoveParams,
   MovesMade,
+  PubKeyHash,
   Row,
   StartGameCommand,
   StartGameParams,
@@ -34,7 +35,7 @@ import {
 
 
 export class Payout {
-  constructor(public readonly pubKeyHash: string, public readonly amountInAda: number) {}
+  constructor(public readonly pubKeyHash: PubKeyHash, public readonly amountInAda: number) {}
 }
 
 export class GameIsWonPayout {
@@ -144,14 +145,14 @@ export class Game {
 
     const currentGamestate: GameInProgress = this.gameState as GameInProgress;
     assert.equal(
-      currentGamestate.playerAddressToMakeMove == params.playerPubKeyHash,
+      currentGamestate.playerAddressToMakeMove.equals(params.playerPubKeyHash),
       true,
       "Wrong player playing now!"
     );
 
     // select other player to play next.
     let playerAddressToMakeMove = currentGamestate.playerOnePubKeyHash;
-    if (currentGamestate.playerAddressToMakeMove == playerAddressToMakeMove) {
+    if (currentGamestate.playerAddressToMakeMove.equals(playerAddressToMakeMove)) {
       playerAddressToMakeMove = currentGamestate.playerTwoPubKeyHash;
     }
 
@@ -233,7 +234,7 @@ export class Game {
     );
 
     let winnerByTimout = currentGamestate.playerOnePubKeyHash;
-    if (currentGamestate.playerAddressToMakeMove == winnerByTimout) {
+    if (currentGamestate.playerAddressToMakeMove.equals(winnerByTimout)) {
       winnerByTimout = currentGamestate.playerTwoPubKeyHash;
     }
 
@@ -316,8 +317,8 @@ export class Game {
 
       if (topLeftMove && topMiddleMove && topRightMove) {
         if (
-          topLeftMove.playerPubKeyHash == topMiddleMove.playerPubKeyHash &&
-          topLeftMove.playerPubKeyHash == topRightMove.playerPubKeyHash
+          topLeftMove.playerPubKeyHash.equals(topMiddleMove.playerPubKeyHash) &&
+          topLeftMove.playerPubKeyHash.equals(topRightMove.playerPubKeyHash)
         ) {
           return true;
         }

@@ -1,5 +1,5 @@
 import { Game } from "../../app/game.js";
-import { StartGameCommand, StartGameParams } from "../../app/game-data.js";
+import { PubKeyHash, StartGameCommand, StartGameParams } from "../../app/game-data.js";
 import { TxOut, TxOutDatum, TxOutParameter } from "../../cardano-cli/command/transaction/build/tx-out.js";
 import { SigningKeyFile } from "../../cardano-cli/command/transaction/sign/signing-key-file.js";
 import { TxToSign } from "../../cardano-cli/command/transaction/sign/tx-to-sign.js";
@@ -24,7 +24,7 @@ export const sendStartGameCommandToScriptTransaction: (
 
   const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
 
-  const startGameParams = new StartGameParams(playerPubKeyHash, betInAda, gameMaxIntervalInSeconds);
+  const startGameParams = new StartGameParams(PubKeyHash.fromHexString(playerPubKeyHash), betInAda, gameMaxIntervalInSeconds);
   const command = new StartGameCommand(startGameParams);
 
   const gameState = Game.handleActionCommand(command);

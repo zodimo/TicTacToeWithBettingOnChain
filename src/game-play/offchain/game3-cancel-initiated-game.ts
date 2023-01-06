@@ -3,14 +3,17 @@ import {
   StartGameParams,
   CancelInitiatedGameCommand,
   StartGameCommand,
+  PubKeyHash,
 } from "../../app/game-data.js";
 import { Game } from "../../app/game.js";
 import { runCommand } from "../../cardano-cli/run-command.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
+const playerOneAddress = "fb21b4500aa8740c8335fc75914e96b8d66c1afc57c03ad0f98ad928";
+
+
 // TX 1
-const playerOneAddress = "Player1Address";
-const startGameParams = new StartGameParams(playerOneAddress, 50, 1);
+const startGameParams = new StartGameParams(PubKeyHash.fromHexString(playerOneAddress), 50, 1);
 const tx1Command = new StartGameCommand(startGameParams);
 const tx1GameState = Game.handleActionCommand(tx1Command);
 const tx1GameStateAsScriptData = tx1GameState.toScriptData();

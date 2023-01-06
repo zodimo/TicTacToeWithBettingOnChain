@@ -549,13 +549,11 @@ canClaimWin gs command ctx = case gs of
                                         -- the value paid to winner may be more that the bet as it may include the change  
                                         -- bypassed for now with True ||
                                         traceIfFalse "Winner is not getting paid!" 
-                                        $ True || Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
+                                        $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
                                                           
     _                       -> traceError "expected game state GameIsWon" 
 
         
-            
-
 
 -- validate output
 -- value is split evenly
@@ -564,22 +562,22 @@ canClaimWin gs command ctx = case gs of
 canClaimTie :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 canClaimTie gs command ctx = case gs of 
     GameIsTied {..} ->  let 
+
                         player1PubKeyHash = PubKeyHash gitPlayerOnePubKeyHash   
-                        player2PubKeyHash = PubKeyHash gitPlayerTwoPubKeyHash   
-            
+                        player2PubKeyHash = PubKeyHash gitPlayerTwoPubKeyHash         
+
                         -- refund of bets
                         payoutValueInAda = Ada.fromValue $ Ada.lovelaceValueOf (gitBetInAda*1000000)
-                        valuePayToPlayer1 = Ada.fromValue $ PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player1PubKeyHash
-                        valuePayToPlayer2 = Ada.fromValue $ PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player2PubKeyHash
-                    
+                        valueInAdaPaidToPlayer1 = Ada.fromValue $ PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player1PubKeyHash
+                        valueInAdaPaidToPlayer2 = Ada.fromValue $ PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) player2PubKeyHash
+                                            
                         in 
                             -- Very NAIVE!!
                             -- the value paid to each player may be more that the bet as it may include the change 
                             -- pay atleast the value of the initial bet  
-                            -- bypassed for now with True ||
                             traceIfFalse "Bets are not being refunded!"  
-                            $ True ||traceIfFalse "valuePayToPlayer1, bet is not being refunded!" (payoutValueInAda <= valuePayToPlayer1) &&
-                            traceIfFalse "valuePayToPlayer2, bet is not being refunded!" (payoutValueInAda <= valuePayToPlayer2) 
+                            $ traceIfFalse "valuePayToPlayer1, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer1) &&
+                            traceIfFalse "valuePayToPlayer2, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer2) 
                                                           
     _               -> traceError "expected game state GameIsTied" 
 
@@ -655,8 +653,8 @@ shouldBeFalse = isMoveAvailable moveA1 moves1
 shouldBeTrue = isMoveAvailable moveA3 moves1
 
 
-player1pkh = "player1" :: BuiltinByteString
-player2pkh = "player2" :: BuiltinByteString
+-- player1pkh = "player1" :: BuiltinByteString
+-- player2pkh = "player2" :: BuiltinByteString
 
 
 moveMadeP1A1 = MoveMade player1pkh moveA1
@@ -706,3 +704,28 @@ makeMoveCommand1 = MakeMoveCommand
     }
 
 makeMove1SouldBeTrue = isMoveAvailableInThisGame gameInProgress1 makeMoveCommand1
+
+{-
+DEBUG: cardano-cli address key-hash --payment-verification-key-file /home/jaco/CardanoProjects/testnet/priv/wallet/player1/player1.payment.vkey
+fb21b4500aa8740c8335fc75914e96b8d66c1afc57c03ad0f98ad928
+DEBUG: cardano-cli address key-hash --payment-verification-key-file /home/jaco/CardanoProjects/testnet/priv/wallet/player2/player2.payment.vkey
+91f60209b232cac65d34c0584fdc33d7024de208d78e4c696fef3a63
+-}
+
+
+player1pkh :: BuiltinByteString
+player1pkh = "fb21b4500aa8740c8335fc75914e96b8d66c1afc57c03ad0f98ad928"
+
+player2pkh :: BuiltinByteString
+player2pkh = "91f60209b232cac65d34c0584fdc33d7024de208d78e4c696fef3a63"
+
+-- player1PubKeyHash :: PubKeyHash
+-- player1PubKeyHash = PubKeyHash player1pkh
+
+
+-- magic numbers
+-- indexedByteString :: [Integer]
+-- indexedByteString = [indexByteString player1pkh i | i <- [0..27]]
+
+-- manager :: PubKeyHash
+-- manager = PubKeyHash { getPubKeyHash = (PlutusTx.Prelude.foldr (\x y -> consByteString x y) emptyByteString indexedByteString) }

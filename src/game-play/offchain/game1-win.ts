@@ -10,13 +10,18 @@ import {
   JoinGameCommand,
   MakeMoveCommand,
   StartGameCommand,
+  PubKeyHash,
 } from "../../app/game-data.js";
 import { Game } from "../../app/game.js";
 import { fromJson, ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
 
+
+const playerOneAddress = "fb21b4500aa8740c8335fc75914e96b8d66c1afc57c03ad0f98ad928";
+const playerTwoAddress = "91f60209b232cac65d34c0584fdc33d7024de208d78e4c696fef3a63";
+
+
 // TX 1
-const playerOneAddress = "Player1Address";
-const startGameParams = new StartGameParams(playerOneAddress, 50, 30);
+const startGameParams = new StartGameParams(PubKeyHash.fromHexString(playerOneAddress), 50, 30);
 const tx1Command = new StartGameCommand(startGameParams);
 const tx1GameState = Game.handleActionCommand(tx1Command);
 const tx1GameStateAsScriptDataJson = tx1GameState
@@ -31,8 +36,8 @@ console.log(`tx1 scriptdata : ${tx1GameStateAsScriptDataJson}`);
 //////////////////////////////////////////////
 
 // TX 2
-const playerTwoAddress = "Player2Address";
-const joinGameParams = new JoinGameParams(playerTwoAddress);
+
+const joinGameParams = new JoinGameParams(PubKeyHash.fromHexString(playerTwoAddress));
 
 //gamestate from scriptData
 const tx1GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx1GameStateAsScriptDataJson));
@@ -57,7 +62,7 @@ console.log(`tx2 scriptdata : ${tx2GameStateAsScriptDataJson}`);
 // C    |   |
 
 const move1 = new Move(Row.ROW_A, Column.Col_1);
-const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
+const makeMoveParams1 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move1);
 const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx2GameStateAsScriptDataJson));
 const tx3Command = new MakeMoveCommand(tx2GameStateFromScriptData, makeMoveParams1);
 const tx3GameState = Game.handleActionCommand(tx3Command);
@@ -81,7 +86,7 @@ console.log(`tx3 scriptdata : ${tx3GameStateAsScriptDataJson}`);
 // C    |   |
 
 const move2 = new Move(Row.ROW_B, Column.Col_2);
-const makeMoveParams2 = new MakeMoveParams(playerOneAddress, move2);
+const makeMoveParams2 = new MakeMoveParams(PubKeyHash.fromHexString(playerOneAddress), move2);
 const tx3GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx3GameStateAsScriptDataJson));
 const tx4Command = new MakeMoveCommand(tx3GameStateFromScriptData, makeMoveParams2);
 const tx4GameState = Game.handleActionCommand(tx4Command);
@@ -104,7 +109,7 @@ console.log(`tx4 scriptdata : ${tx4GameStateAsScriptDataJson}`);
 // C    |   |
 
 const move3 = new Move(Row.ROW_A, Column.Col_2);
-const makeMoveParams3 = new MakeMoveParams(playerTwoAddress, move3);
+const makeMoveParams3 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move3);
 const tx4GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx4GameStateAsScriptDataJson));
 const tx5Command = new MakeMoveCommand(tx4GameStateFromScriptData, makeMoveParams3);
 const tx5GameState = Game.handleActionCommand(tx5Command);
@@ -127,7 +132,7 @@ console.log(`tx5 scriptdata : ${tx5GameStateAsScriptDataJson}`);
 // C    |   |
 
 const move4 = new Move(Row.ROW_B, Column.Col_3);
-const makeMoveParams4 = new MakeMoveParams(playerOneAddress, move4);
+const makeMoveParams4 = new MakeMoveParams(PubKeyHash.fromHexString(playerOneAddress), move4);
 const tx5GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx5GameStateAsScriptDataJson));
 const tx6Command = new MakeMoveCommand(tx5GameStateFromScriptData, makeMoveParams4);
 const tx6GameState = Game.handleActionCommand(tx6Command);
@@ -150,7 +155,7 @@ console.log(
 // C    |   |
 
 const move5 = new Move(Row.ROW_A, Column.Col_3);
-const makeMoveParams5 = new MakeMoveParams(playerTwoAddress, move5);
+const makeMoveParams5 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move5);
 const tx6GameStateFromScriptData = new GameStateFactory().fromScriptData(fromJson(tx6GameStateAsScriptDataJson));
 const tx7Command = new MakeMoveCommand(tx6GameStateFromScriptData, makeMoveParams5);
 const tx7GameState = Game.handleActionCommand(tx7Command);

@@ -48,7 +48,7 @@ export const sendCancelInProgressGameCommandToScriptTransaction: (
 
   const payOutToWallet: (payout: Payout, playerWallets: Wallet[]) => Wallet = (payout, wallets) => {
     const maybeIdentifiedWallet = wallets.find((wallet) => {
-      return cardanoCli.pubKeyHashFromVerificationKeyFile(wallet.keys.payment.verificationKeyFile) == payout.pubKeyHash;
+      return cardanoCli.pubKeyHashFromVerificationKeyFile(wallet.keys.payment.verificationKeyFile) == payout.pubKeyHash.toHexString();
     });
     assert.equal(!!maybeIdentifiedWallet, true, "No Wallet pub key hash matches!");
     return maybeIdentifiedWallet as Wallet;
@@ -62,7 +62,7 @@ export const sendCancelInProgressGameCommandToScriptTransaction: (
     const winningWalletPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(
       wallet.keys.payment.verificationKeyFile
     );
-    assert.equal(winningWalletPubKeyHash == payout.pubKeyHash, true, "Expects pub key hash to match!");
+    assert.equal(winningWalletPubKeyHash == payout.pubKeyHash.toHexString(), true, "Expects pub key hash to match!");
 
     const payoutInLoveLace = cardanoCli.toLovelace(payout.amountInAda);
 

@@ -1,5 +1,5 @@
 import { Game } from "../../app/game.js";
-import { GameStateFactory, JoinGameCommand, JoinGameParams } from "../../app/game-data.js";
+import { GameStateFactory, JoinGameCommand, JoinGameParams, PubKeyHash } from "../../app/game-data.js";
 import { RequiredSigner } from "../../cardano-cli/command/transaction/build/required-signer.js";
 import { TxOut, TxOutDatum, TxOutParameter } from "../../cardano-cli/command/transaction/build/tx-out.js";
 import { SigningKeyFile } from "../../cardano-cli/command/transaction/sign/signing-key-file.js";
@@ -31,11 +31,12 @@ export const sendJoinGameCommandToScriptTransaction: (
 
   const utxoFromStack = getUtxoFromScriptAddress(gameStateUtxcoId, scriptAddress);
 
+  console.log(JSON.stringify(utxoFromStack.inlineDatum));
   const scriptData = fromJson(JSON.stringify(utxoFromStack.inlineDatum));
   const gameStateFromScriptData = new GameStateFactory().fromScriptData(scriptData);
   const playerPubKeyHash = cardanoCli.pubKeyHashFromVerificationKeyFile(playerWallet.keys.payment.verificationKeyFile);
 
-  const joinGameParams = new JoinGameParams(playerPubKeyHash);
+  const joinGameParams = new JoinGameParams(PubKeyHash.fromHexString(playerPubKeyHash));
   const command = new JoinGameCommand(gameStateFromScriptData, joinGameParams);
   const gameState = Game.handleActionCommand(command);
   const gameStateDatumFile = writeGameStateAsDatumToFile(gameState);

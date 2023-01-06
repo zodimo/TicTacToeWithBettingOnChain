@@ -11,6 +11,7 @@ import {
   JoinGameCommand,
   MakeMoveCommand,
   StartGameCommand,
+  PubKeyHash,
 } from "../../app/game-data.js";
 import { Game } from "../../app/game.js";
 import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
@@ -19,9 +20,11 @@ import { ScriptDataJsonSchema } from "../../cardano-cli/script-data.js";
  * The changes from the wins is from TX7
  */
 
+const playerOneAddress = "fb21b4500aa8740c8335fc75914e96b8d66c1afc57c03ad0f98ad928";
+const playerTwoAddress = "91f60209b232cac65d34c0584fdc33d7024de208d78e4c696fef3a63";
+
 // TX 1
-const playerOneAddress = "Player1Address";
-const startGameParams = new StartGameParams(playerOneAddress, 50, 30);
+const startGameParams = new StartGameParams(PubKeyHash.fromHexString(playerOneAddress), 50, 30);
 const tx1Command = new StartGameCommand(startGameParams);
 const tx1GameState = Game.handleActionCommand(tx1Command);
 const tx1GameStateAsScriptData = tx1GameState.toScriptData();
@@ -36,8 +39,7 @@ console.log(
 //////////////////////////////////////////////
 
 // TX 2
-const playerTwoAddress = "Player2Address";
-const joinGameParams = new JoinGameParams(playerTwoAddress);
+const joinGameParams = new JoinGameParams(PubKeyHash.fromHexString(playerTwoAddress));
 
 //gamestate from scriptData
 const tx1GameStateFromScriptData = new GameStateFactory().fromScriptData(tx1GameStateAsScriptData);
@@ -62,7 +64,7 @@ console.log(
 // C    |   |
 
 const move1 = new Move(Row.ROW_A, Column.Col_1);
-const makeMoveParams1 = new MakeMoveParams(playerTwoAddress, move1);
+const makeMoveParams1 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move1);
 const tx2GameStateFromScriptData = new GameStateFactory().fromScriptData(tx2GameStateAsScriptData);
 const tx3Command = new MakeMoveCommand(tx2GameStateFromScriptData, makeMoveParams1);
 const tx3GameState = Game.handleActionCommand(tx3Command);
@@ -86,7 +88,7 @@ console.log(
 // C    |   |
 
 const move2 = new Move(Row.ROW_B, Column.Col_2);
-const makeMoveParams2 = new MakeMoveParams(playerOneAddress, move2);
+const makeMoveParams2 = new MakeMoveParams(PubKeyHash.fromHexString(playerOneAddress), move2);
 const tx3GameStateFromScriptData = new GameStateFactory().fromScriptData(tx3GameStateAsScriptData);
 const tx4Command = new MakeMoveCommand(tx3GameStateFromScriptData, makeMoveParams2);
 const tx4GameState = Game.handleActionCommand(tx4Command);
@@ -109,7 +111,7 @@ console.log(
 // C    |   |
 
 const move3 = new Move(Row.ROW_A, Column.Col_2);
-const makeMoveParams3 = new MakeMoveParams(playerTwoAddress, move3);
+const makeMoveParams3 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move3);
 const tx4GameStateFromScriptData = new GameStateFactory().fromScriptData(tx4GameStateAsScriptData);
 const tx5Command = new MakeMoveCommand(tx4GameStateFromScriptData, makeMoveParams3);
 const tx5GameState = Game.handleActionCommand(tx5Command);
@@ -132,7 +134,7 @@ console.log(
 // C    |   |
 
 const move4 = new Move(Row.ROW_B, Column.Col_3);
-const makeMoveParams4 = new MakeMoveParams(playerOneAddress, move4);
+const makeMoveParams4 = new MakeMoveParams(PubKeyHash.fromHexString(playerOneAddress), move4);
 const tx5GameStateFromScriptData = new GameStateFactory().fromScriptData(tx5GameStateAsScriptData);
 const tx6Command = new MakeMoveCommand(tx5GameStateFromScriptData, makeMoveParams4);
 const tx6GameState = Game.handleActionCommand(tx6Command);
@@ -155,7 +157,7 @@ console.log(
 // C    |   |
 
 const move5 = new Move(Row.ROW_B, Column.Col_1);
-const makeMoveParams5 = new MakeMoveParams(playerTwoAddress, move5);
+const makeMoveParams5 = new MakeMoveParams(PubKeyHash.fromHexString(playerTwoAddress), move5);
 const tx6GameStateFromScriptData = new GameStateFactory().fromScriptData(tx6GameStateAsScriptData);
 const tx7Command = new MakeMoveCommand(tx6GameStateFromScriptData, makeMoveParams5);
 const tx7GameState = Game.handleActionCommand(tx7Command);
@@ -178,7 +180,7 @@ console.log(
 // C    |   |
 
 const move6 = new Move(Row.ROW_A, Column.Col_3);
-const makeMoveParams6 = new MakeMoveParams(playerOneAddress, move6);
+const makeMoveParams6 = new MakeMoveParams(PubKeyHash.fromHexString(playerOneAddress), move6);
 const tx7GameStateFromScriptData = new GameStateFactory().fromScriptData(tx7GameStateAsScriptData);
 const tx8Command = new MakeMoveCommand(tx7GameStateFromScriptData, makeMoveParams6);
 const tx8GameState = Game.handleActionCommand(tx8Command);
