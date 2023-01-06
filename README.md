@@ -88,7 +88,7 @@ The transaction construction will happen with cardanocli-js as individual steps 
 
   - [x] game state must be in initiated state ( ensure by types)
   - [ ] has enough time passed as specified.[stuck here with tx intervals]
-  - [ ] output value return to playerOne
+  - [x] output value return to playerOne
 
 - [ ] can cancel in progress game
 

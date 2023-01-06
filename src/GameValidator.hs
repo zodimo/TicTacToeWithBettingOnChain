@@ -492,8 +492,17 @@ canCancelInitiatedGame gs command ctx = enoughTimeHasPassed gs txTimeRange && pl
         txTimeRange =  PlutusV2.txInfoValidRange info
 
 {-# INLINABLE playerOneBetIsRefunded #-}
-playerOneBetIsRefunded :: GameStateDatum->PlutusV2.ScriptContext->Bool
-playerOneBetIsRefunded _ _ = True
+playerOneBetIsRefunded :: GameStateDatum -> PlutusV2.ScriptContext -> Bool
+playerOneBetIsRefunded gs ctx = let winnerPubKeyHash = getWinnerPubKeyHashByTimeout gs
+                                    winningValueInAda = getInputScriptValue ctx
+                                    valuePayToWinner = PlutusV2.valuePaidTo (PlutusV2.scriptContextTxInfo ctx) winnerPubKeyHash
+                                    in 
+                                        -- Very NAIVE!!
+                                        -- the value paid to winner may be more that the bet as it may include the change  
+                                        -- bypassed for now with True ||
+                                        traceIfFalse "Winner is not getting paid!" 
+                                        $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
+
 
 -- move not made before
 -- validate output
