@@ -181,18 +181,14 @@ export class Build extends Command {
     }
 
     //tx-in
-    this.txIns.forEach((txInParameter) =>
-      output.push(txInParameter.asParameter())
-    );
+    this.txIns.forEach((txInParameter) => output.push(txInParameter.asParameter()));
 
     if (this.readOnlyTxInReference) {
       output.push(`--read-only-tx-in-reference ${this.readOnlyTxInReference}`);
     }
 
     if (this.requiredSigners) {
-      this.requiredSigners.forEach((requiredSigner) =>
-        output.push(requiredSigner.asParameter())
-      );
+      this.requiredSigners.forEach((requiredSigner) => output.push(requiredSigner.asParameter()));
     }
 
     if (this.txInCollateral) {
@@ -202,23 +198,22 @@ export class Build extends Command {
     if (this.txOutReturnCollateral) {
       output.push(`--tx-out-return-collateral ${this.txOutReturnCollateral}`);
     }
-    if (this.txTotalCollateral) {
+    if (this.isset(this.txTotalCollateral)) {
       output.push(`--tx-total-collateral ${this.txTotalCollateral}`);
     }
 
     //tx-out
-    this.txOuts.forEach((txOutParameter) =>
-      output.push(txOutParameter.asParameter())
-    );
+    this.txOuts.forEach((txOutParameter) => output.push(txOutParameter.asParameter()));
 
     if (this.changeAddress) {
       output.push(`--change-address ${this.changeAddress}`);
     }
 
-    if (this.invalidBefore) {
+    if (this.isset(this.invalidBefore)) {
       output.push(`--invalid-before ${this.invalidBefore}`);
     }
-    if (this.invalidHereafter) {
+
+    if (this.isset(this.invalidHereafter)) {
       output.push(`--invalid-hereaftere ${this.invalidHereafter}`);
     }
 

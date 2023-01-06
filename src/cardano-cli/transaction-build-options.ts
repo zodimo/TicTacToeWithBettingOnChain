@@ -6,8 +6,9 @@ import { RequiredSigner } from "./command/transaction/build/required-signer.js";
 import { TxInParameter } from "./command/transaction/build/tx-in";
 import { TxOutParameter } from "./command/transaction/build/tx-out.js";
 import { Assertion } from "./command/transaction/shared/assertion.js";
+import { Options } from "./options.js";
 
-export class TransactionBuildOptions {
+export class TransactionBuildOptions extends Options {
   private era?: Era;
   private nodeMode?: NodeMode;
   private network?: Network;
@@ -98,9 +99,7 @@ export class TransactionBuildOptions {
     return this.txIns;
   }
 
-  withReadOnlyTxInReference(
-    readOnlyTxInReference: string
-  ): TransactionBuildOptions {
+  withReadOnlyTxInReference(readOnlyTxInReference: string): TransactionBuildOptions {
     this.readOnlyTxInReference = readOnlyTxInReference;
     return this;
   }
@@ -108,14 +107,11 @@ export class TransactionBuildOptions {
     return !!this.readOnlyTxInReference;
   }
   getReadOnlyTxInReference(): string {
-    if (!this.readOnlyTxInReference)
-      throw new Error("ReadOnlyTxInReference is not defined!");
+    if (!this.readOnlyTxInReference) throw new Error("ReadOnlyTxInReference is not defined!");
     return this.readOnlyTxInReference;
   }
 
-  withRequiredSigners(
-    requiredSigners: RequiredSigner[]
-  ): TransactionBuildOptions {
+  withRequiredSigners(requiredSigners: RequiredSigner[]): TransactionBuildOptions {
     this.requiredSigners = requiredSigners;
     return this;
   }
@@ -130,8 +126,7 @@ export class TransactionBuildOptions {
     return !!this.requiredSigners;
   }
   getRequiredSigners(): RequiredSigner[] {
-    if (!this.requiredSigners)
-      throw new Error("RequiredSigners is not defined!");
+    if (!this.requiredSigners) throw new Error("RequiredSigners is not defined!");
     return this.requiredSigners;
   }
 
@@ -147,9 +142,7 @@ export class TransactionBuildOptions {
     return this.txInCollateral;
   }
 
-  withTxOutReturnCollateral(
-    txOutReturnCollateral: string
-  ): TransactionBuildOptions {
+  withTxOutReturnCollateral(txOutReturnCollateral: string): TransactionBuildOptions {
     this.txOutReturnCollateral = txOutReturnCollateral;
     return this;
   }
@@ -157,8 +150,7 @@ export class TransactionBuildOptions {
     return !!this.txOutReturnCollateral;
   }
   getTxOutReturnCollateral(): string {
-    if (!this.txOutReturnCollateral)
-      throw new Error("TxOutReturnCollateralollateral is not defined!");
+    if (!this.txOutReturnCollateral) throw new Error("TxOutReturnCollateralollateral is not defined!");
     return this.txOutReturnCollateral;
   }
 
@@ -167,12 +159,11 @@ export class TransactionBuildOptions {
     return this;
   }
   hasTxTotalCollateral(): boolean {
-    return !!this.txTotalCollateral;
+    return this.isset(this.txTotalCollateral);
   }
   getTxTotalCollateral(): number {
-    if (!this.txTotalCollateral)
-      throw new Error("TxTotalCollateral is not defined!");
-    return this.txTotalCollateral;
+    if (!this.hasTxTotalCollateral()) throw new Error("TxTotalCollateral is not defined!");
+    return this.txTotalCollateral!;
   }
 
   withTxOuts(txOuts: TxOutParameter[]): TransactionBuildOptions {
@@ -211,11 +202,11 @@ export class TransactionBuildOptions {
     return this;
   }
   hasInvalidBefore(): boolean {
-    return !!this.invalidBefore;
+    return this.isset(this.invalidBefore);
   }
   getInvalidBefore(): number {
-    if (!this.invalidBefore) throw new Error("InvalidBefore is not defined!");
-    return this.invalidBefore;
+    if (!this.hasInvalidBefore()) throw new Error("InvalidBefore is not defined!");
+    return this.invalidBefore!;
   }
 
   withInvalidHereafter(invalidHereafter: number): TransactionBuildOptions {
@@ -223,11 +214,10 @@ export class TransactionBuildOptions {
     return this;
   }
   hasInvalidHereafter(): boolean {
-    return !!this.invalidHereafter;
+    return this.isset(this.invalidHereafter);
   }
   getInvalidHereafter(): number {
-    if (!this.invalidHereafter)
-      throw new Error("InvalidHereafter is not defined!");
-    return this.invalidHereafter;
+    if (!this.hasInvalidHereafter()) throw new Error("InvalidHereafter is not defined!");
+    return this.invalidHereafter!;
   }
 }
