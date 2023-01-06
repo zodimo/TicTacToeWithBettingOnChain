@@ -48,7 +48,10 @@ import           Control.Monad.Freer.Extras     as Extras
 data Row = Row_A| Row_B | Row_C deriving Show
 data Column = Col_1 | Col_2 | Col_3 deriving Show
 data Move = Move Row Column deriving Show
-data MoveMade = MoveMade BuiltinByteString Move deriving Show
+data MoveMade = MoveMade 
+    { mmPlayerPubKeyHash::BuiltinByteString
+    , mmMove::Move
+    } deriving Show
 data MovesMade = MovesMade [MoveMade] deriving Show
 data Moves = Moves [Move] deriving Show
 
@@ -239,9 +242,21 @@ playerInCommandMustMatchNextPlayerInGameState gs command = case gs of
 -- getWinner :: Moves -> BuiltinByteString
 
 
-{-# INLINABLE mkMoveMadeFromMakeMoveCommand #-}
-mkMoveMadeFromMakeMoveCommand :: GameActionCommandRedeemer -> MoveMade
-mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHash mmcMove
+-- {-# INLINABLE getWinnerPubKeyHashFromMovesMade #-}
+-- -- The Winning move was the last move if the game is in a winning state
+-- getWinnerPubKeyHashFromMovesMade :: MovesMade -> BuiltinByteString
+-- -- getWinnerPubKeyHashFromMovesMade movesMade = mmPlayerPubKeyHash getLastMoveMadeFromMovesMade movesMade
+-- getWinnerPubKeyHashFromMovesMade = mmPlayerPubKeyHash getLastMoveMadeFromMovesMade
+
+-- {-# INLINABLE getLastMoveMadeFromMovesMade #-}
+-- getLastMoveMadeFromMovesMade :: MovesMade -> MoveMade
+-- getLastMoveMadeFromMovesMade MovesMade movesMade
+--     | null movesMade    =  traceError "No Moves have been made"
+--     | otherwise         =last xs
+
+-- {-# INLINABLE mkMoveMadeFromMakeMoveCommand #-}
+-- mkMoveMadeFromMakeMoveCommand :: GameActionCommandRedeemer -> MoveMade
+-- mkMoveMadeFromMakeMoveCommand  MakeMoveCommand{..} = MoveMade mmcPlayerPubKeyHash mmcMove
  
 
 
