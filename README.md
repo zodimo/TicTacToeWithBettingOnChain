@@ -49,3 +49,38 @@ The transaction construction will happen with cardanocli-js as individual steps 
 - run `cabal repl`
 - run `:l Deploy`
 - run `writeTicTacToeValidator` , this will write to testnet/ticTacToe.plutus
+
+
+## Validator requirement implementation onchain
+
+- [ ] can join initiated game
+  - [x] game initiated with valid parameters (enforced by types)
+  - [x] initiated game value must match the bet value
+  - [ ] joining value must match the bet value
+  - [ ] output value goes to script
+  - [ ] output gamestate is valid
+    - playerTwoPubKeyHash value is added from command
+
+- [ ] can make move
+  - [x] current gamestate with valid params (enforced by types)
+  - [ ] the move in the command matches the next player to make move.
+  - [x] ensure game is playable [ not won or tied , ensured by types]
+  - [ ] check output game state valid after making move
+    - [ ] isGameWon
+    - [ ] isGameTied
+  - [ ] can claim win
+    - [x] is game in winning state (enforced by types)
+    - [ ] ensure output value goes to winner address
+  - [ ] can claim tie
+    - [x] is game in tied state (enforced by types)
+    - [ ] ensure output values are split between players
+
+  - [ ] can cancel initiated game
+    - [x] game state must be in initiated state ( ensure by types)
+    - [ ] has enough time passed as specified.[stuck here with tx intervals]
+    - [ ] output value return to playerOne
+  - [ ] can cancel in progress game
+    - [x] game state must be in in-progrogress state ( ensure by types)
+    - [ ] has enough time passed as specified.[stuck here with tx intervals]
+    - [ ] determine winner
+    - [ ] output value goes to winner
