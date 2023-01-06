@@ -98,6 +98,7 @@ export class Game {
 
   static startGame(params: StartGameParams): Game {
     //create game state from params
+    // @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now
     const postixTimeNow = +Date.now().toString();
 
     const gameState = new GameInitiated(

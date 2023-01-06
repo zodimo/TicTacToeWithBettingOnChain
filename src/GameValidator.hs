@@ -430,12 +430,12 @@ canCancelInProgressGame gs command ctx = enoughTimeHasPassed gs txTimeRange  && 
 
 {-# INLINABLE enoughTimeHasPassed #-}
 enoughTimeHasPassed :: GameStateDatum -> PlutusV2.POSIXTimeRange-> Bool
-{- onchain time validation disabled for now with true || -}
+-- Disable this check for now with True ||
 enoughTimeHasPassed gs txTimeRange = True || case gs of
-        GameInitiated {..}  -> traceIfFalse "Not enough time has passed."  
-            ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + giGameMaxIntervalInSeconds * 1000)) txTimeRange)
-        GameInProgress {..}  -> traceIfFalse "Not enough time has passed."  
-            ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ gipOccurredAtPosixTime + gipGameMaxIntervalInSeconds * 1000)) txTimeRange)
+        GameInitiated {..}  -> traceIfFalse "Not enough time has passed to cancel an initiated game."  
+            ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + (giGameMaxIntervalInSeconds * 1000))) txTimeRange)
+        GameInProgress {..}  -> traceIfFalse "Not enough time has passed to cancel an inprogress game."  
+            ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ gipOccurredAtPosixTime + (gipGameMaxIntervalInSeconds * 1000))) txTimeRange)
         _                   -> traceError "expected GameInitiated or GameInProgress"
 
 
