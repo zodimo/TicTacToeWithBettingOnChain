@@ -36,7 +36,8 @@ const tx2UtxoId = sendJoinGameCommandToScriptTransaction(player2Wallet, scriptAd
 
 PLayer 2 is "psuedoly nominated to make the first move".
 
-Player 2  plays A 1
+Player 2 plays A 1
+
 ```typescript
 //    1   2   3
 // A _O_|___|___
@@ -58,7 +59,7 @@ const tx3UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx3Move,
 
 ## TX4
 
-Player 1  plays B 2
+Player 1 plays B 2
 
 ```typescript
 // A _O_|___|___
@@ -72,7 +73,7 @@ const tx4UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx4Move,
 
 ## TX5
 
-Player 2  plays A 2
+Player 2 plays A 2
 
 ```typescript
 // A _O_|_O_|___
@@ -86,7 +87,7 @@ const tx5UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx5Move,
 
 ## TX6
 
-Player 1  plays B 3
+Player 1 plays B 3
 
 ```typescript
 // A _O_|_O_|___
@@ -100,7 +101,7 @@ const tx6UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx6Move,
 
 ## TX7
 
-Player 2  plays B 1 
+Player 2 plays B 1
 
 ```typescript
 // A _O_|_O_|___
@@ -114,7 +115,7 @@ const tx7UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx7Move,
 
 ## TX8
 
-Player 1  plays A 3 for the TIE
+Player 1 plays A 3 for the TIE
 
 ```typescript
 // A _O_|_O_|_X_
@@ -124,13 +125,12 @@ Player 1  plays A 3 for the TIE
 const tx8Move = new Move(Row.ROW_A, Column.Col_3);
 const tx8UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx8Move, scriptAddress, scriptFile, tx7UtxoId);
 // the script will wait for the utxoid to appear on the recipient address;
-
 ```
 
 ## TX9
 
-Any player van claim the tie and will pay the feed for the locked value  
-to be distributed evenly.
+Any wallet can initiate the request for the locked value to be paid out. This wallet will also pay the fee.  
+The transaction will distribute the value evenly between the playing wallets.
 
 ```typescript
 // signature
@@ -140,7 +140,7 @@ to be distributed evenly.
 //   scriptFile: string,
 //   scriptUtxoIdWithGameState: UtxoId,
 //   playerWallets: Wallet[]
-// ) => UtxoId[] 
+// ) => UtxoId[]
 const tx9UtxoIds = sendClaimTieCommandToScriptTransaction(player2Wallet, scriptAddress, scriptFile, tx8UtxoId, [
   player1Wallet,
   player2Wallet,
@@ -148,5 +148,4 @@ const tx9UtxoIds = sendClaimTieCommandToScriptTransaction(player2Wallet, scriptA
 // the script will wait for the utxoid to appear on the recipient address;
 console.log("##########################");
 console.log(`The last utxos of the tied game : ${tx9UtxoIds.map((utxo) => utxo.toString()).join(" ")}`);
-
 ```

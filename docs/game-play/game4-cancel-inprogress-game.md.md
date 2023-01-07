@@ -33,11 +33,11 @@ const tx2UtxoId = sendJoinGameCommandToScriptTransaction(player2Wallet, scriptAd
 ```
 
 ## TX3
-Whenever a player fails to response (timeout set on game initiation gameMaxIntervalInSeconds) the game can then be cancelled and the waiting player will be the winner. 
 
-Anybody can cancel the game, the transaction fees will be paid by the wallet initiating the cancel request. 
+Whenever a player fails to response (timeout set on game initiation gameMaxIntervalInSeconds) the game can then be cancelled and the waiting player will be the winner.
+
+Any wallet can initiate the cancel request for the locked value to be paid out. This wallet will also pay the fee.  
 The winnder will be determined and the value locked will be paid to the winning player wallet.
-
 
 ```typescript
 // signature
@@ -58,5 +58,4 @@ const tx3UtxoId = sendCancelInProgressGameCommandToScriptTransaction(
 // the script will wait for the utxoid to appear on the recipient address;
 console.log("##########################");
 console.log(`The last utxo of the cancelled game : ${tx3UtxoId}`);
-
 ```

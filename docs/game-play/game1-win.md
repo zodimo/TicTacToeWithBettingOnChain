@@ -114,7 +114,7 @@ const tx7UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx7Move,
 
 ## TX8
 
-Any player can claim the win and will then also pay the fees.  
+Any wallet can initiate the request for the winning value to be paid out. This wallet will also pay the fee.  
 The transaction will pay the locked value to the winning address.
 
 ```typescript
