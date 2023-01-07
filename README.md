@@ -40,7 +40,7 @@ Bob can now claim the winnings.
 
 # Instruction
 
-The transaction construction will happen with cardanocli-js as individual steps to create the transactions to play the game and simulate async interactions.
+For transaction construction, I have created a custom cardano-cli wrapper in Typescript (lightly inspired by cardanocli-js). Individual transactions representing steps to play the game and simulate async interactions.
 
 ### How to build the plutus script.
 
