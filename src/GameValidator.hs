@@ -396,6 +396,13 @@ validCommandForGameState gs command ctx =  case gs of
 -- GAME constraint input game state + command params = output game state
 -- TX Contraint Constraints.mustPayToTheScript 
 
+{-
+    correctOutputGameState
+    -- players pkh correctly set
+    -- bet correctly set
+    -- moves are empty
+     ...
+-}
 
 
 
@@ -421,17 +428,30 @@ canJoinGame gs _ ctx =  case gs of
     _                  -> traceError "expected GameInitiated" 
 
 
-{-# INLINABLE getOutputScriptValue #-}
-getOutputScriptValue :: PlutusV2.ScriptContext -> PlutusV2.Value
--- output ensure there is only 1 and return value
--- what about if multiple games are played at once in a single transaction ? not supported at this time
-getOutputScriptValue ctx = PlutusV2.txOutValue scriptTxOut
+
+{-# INLINABLE getOutputScriptTxOut #-}
+getOutputScriptTxOut :: PlutusV2.ScriptContext -> PlutusV2.TxOut
+getOutputScriptTxOut ctx = scriptTxOut
         where
             scriptTxouts = PlutusV2.getContinuingOutputs ctx
             scriptTxOut = case scriptTxouts of
                             [i] -> i
                             _   -> traceError "expected exactly one script output"   
 
+
+{-# INLINABLE getOutputScriptDatum #-}
+getOutputScriptDatum :: PlutusV2.ScriptContext -> GameStateDatum
+getOutputScriptDatum ctx = case (PlutusV2.txOutDatum (getOutputScriptTxOut ctx)) of
+                PlutusV2.NoOutputDatum    -> traceError "expected inlineDatum not NoOutputDatum!"   
+                PlutusV2.OutputDatumHash _-> traceError "expected inlineDatum not OutputDatumHash!"   
+                -- this is where the gamestate is hydrated from BuiltinData	
+                PlutusV2.OutputDatum  _   ->  traceError "getOutputScriptDatum not Implemente yet!"   
+
+{-# INLINABLE getOutputScriptValue #-}
+getOutputScriptValue :: PlutusV2.ScriptContext -> PlutusV2.Value
+-- output ensure there is only 1 and return value
+-- what about if multiple games are played at once in a single transaction ? not supported at this time
+getOutputScriptValue ctx = PlutusV2.txOutValue (getOutputScriptTxOut ctx)
 
 
 {-# INLINABLE getInputScriptValue #-}
@@ -464,18 +484,6 @@ getInputScriptValue ctx = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scri
             scriptInputTxInInfo = getSriptInputTxInInfoFromTxInfo info
 
 
-{-
-    correctValueInScriptToMatchBet 
-    the joining player must match the bet with value
--}
-
-{-
-    correctOutputGameState
-    -- players pkh correctly set
-    -- bet correctly set
-    -- moves are empty
-     ...
--}
 
 
 
