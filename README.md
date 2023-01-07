@@ -64,14 +64,14 @@ The transaction construction will happen with cardanocli-js as individual steps 
 
 (if not implemented && True is used )
 
-- [ ] can join initiated game
+- [x] can join initiated game
 
   - [x] game initiated with valid parameters (enforced by types)
   - [x] initiated game value must match the bet value
   - [x] joining value must match the bet value
   - [x] output value goes to script
-  - [ ] output gamestate is valid
-    - [ ] playerTwoPubKeyHash value is added from command
+  - [x] output gamestate is valid
+    - [x] playerTwoPubKeyHash value is added from command ( I know all the datum props need to be tested)
 
 - [ ] can make move
 

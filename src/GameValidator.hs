@@ -409,8 +409,8 @@ validCommandForGameState gs command ctx =  case gs of
 {-# INLINABLE canJoinGame #-}
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
-canJoinGame gs _ ctx =  case gs of 
-    GameInitiated {..} -> gameBetMustMatchTheValue && outputValueOnScriptMustBeDoubleTheBet
+canJoinGame gs command ctx =  case gs of 
+    GameInitiated {..} -> gameBetMustMatchTheValue && outputValueOnScriptMustBeDoubleTheBet && validScriptOutputAfterJoin
         where 
             -- the player initiating the game needs to match the value with the bet
             gameBetMustMatchTheValue :: Bool
@@ -424,7 +424,19 @@ canJoinGame gs _ ctx =  case gs of
             outputValueOnScriptMustBeDoubleTheBet = let expectedAdaValue = Ada.fromValue $ Ada.lovelaceValueOf (2 * giBetInAda * 1000000)
                                                         in traceIfFalse "Bet is not matched, player cannot join!"  
                                                         $ expectedAdaValue == Ada.fromValue ( getOutputScriptValue ctx)
+
+            validScriptOutputAfterJoin :: Bool
+            validScriptOutputAfterJoin = case command of
+                JoinGameCommand{..} -> 
+                    let futureGameState = getOutputScriptDatum ctx                    
+                        player2pkhFromCommand = jgcPlayerTwoPubKeyHash
+                        in case futureGameState of
+                            GameInitiated {}    -> traceError "validScriptOutputAfterJoin : GameInitiated FOUND!!"                            
+                            GameInProgress {..} -> traceIfFalse "PlayerTwoPubKeyHash not set correctly!" $ gipPlayerTwoPubKeyHash == player2pkhFromCommand
+                            _                   -> traceError "validScriptOutputAfterJoin : dont know how we got here.."   
+
                                         
+                _                  -> traceError "expected JoinGameCommand" 
     _                  -> traceError "expected GameInitiated" 
 
 
@@ -442,10 +454,17 @@ getOutputScriptTxOut ctx = scriptTxOut
 {-# INLINABLE getOutputScriptDatum #-}
 getOutputScriptDatum :: PlutusV2.ScriptContext -> GameStateDatum
 getOutputScriptDatum ctx = case (PlutusV2.txOutDatum (getOutputScriptTxOut ctx)) of
-                PlutusV2.NoOutputDatum    -> traceError "expected inlineDatum not NoOutputDatum!"   
-                PlutusV2.OutputDatumHash _-> traceError "expected inlineDatum not OutputDatumHash!"   
+                PlutusV2.NoOutputDatum          -> traceError "expected inlineDatum not NoOutputDatum!"   
+                PlutusV2.OutputDatumHash _      -> traceError "expected inlineDatum not OutputDatumHash!"   
                 -- this is where the gamestate is hydrated from BuiltinData	
-                PlutusV2.OutputDatum  _   ->  traceError "getOutputScriptDatum not Implemente yet!"   
+                PlutusV2.OutputDatum  datum     ->  case (traceIfNothing "Expected custom data here !!". PlutusV2.fromBuiltinData . PlutusV2.fromBuiltin . PlutusV2.getDatum $ datum) of
+                                                        GameInitiated {..} -> GameInitiated {..}
+                                                        GameInProgress {..} -> GameInProgress {..}
+                                                        _               -> traceError "unexpected type of datum!!"   
+                                                    where
+                                                        -- @see https://github.com/input-output-hk/plutus-use-cases/blob/189dc6b468557b2946c835330dfb183d62180ace/mlabs/src/Mlabs/EfficientNFT/Lock.hs
+                                                        traceIfNothing :: BuiltinString -> Maybe a -> a
+                                                        traceIfNothing err = fromMaybe (traceError err)
 
 {-# INLINABLE getOutputScriptValue #-}
 getOutputScriptValue :: PlutusV2.ScriptContext -> PlutusV2.Value
