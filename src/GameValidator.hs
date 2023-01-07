@@ -237,11 +237,11 @@ isTopRowFilledByPlayer playerPubKeyHash (MovesMade movesMade) = (isTopRowFilled 
 {-# INLINABLE isGameTied #-}
 isGameTied :: BuiltinByteString -> BuiltinByteString -> [MoveMade] -> Bool
 -- top row filled but nobody won
-isGameTied  p1pkh p2pkh movesMade =  all ( == False) [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
+isGameTied  p1pkh p2pkh movesMade = isTopRowFilled (MovesMade movesMade) && all ( == False) [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
 
 {-# INLINABLE isGameWon #-}
 isGameWon ::  BuiltinByteString -> BuiltinByteString -> [MoveMade] -> Bool
-isGameWon  p1pkh p2pkh movesMade =  elem True [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
+isGameWon  p1pkh p2pkh movesMade =  isTopRowFilled (MovesMade movesMade) && elem True [ (isGameWonByPlayer p1pkh (MovesMade movesMade)), (isGameWonByPlayer p2pkh (MovesMade movesMade)) ]
 
 
 {-# INLINABLE isGameWonByPlayer #-}
@@ -253,7 +253,7 @@ isGameWonByPlayer = isTopRowFilledByPlayer
 getWinningPlayerPubKeyHash :: BuiltinByteString -> BuiltinByteString -> MovesMade -> BuiltinByteString
 getWinningPlayerPubKeyHash p1pkh p2pkh (MovesMade movesMade)  = 
     case (isGameWon p1pkh p2pkh movesMade) of
-        False -> traceError "Nobody Won!"
+        False -> traceError "getWinningPlayerPubKeyHash: Nobody Won!"
         True  -> case (isGameWonByPlayer p1pkh (MovesMade movesMade)) of
             True -> p1pkh
             _    -> p2pkh
@@ -263,19 +263,19 @@ getWinningPlayerPubKeyHash p1pkh p2pkh (MovesMade movesMade)  =
 isMoveAvailableInThisGame :: GameStateDatum -> GameActionCommandRedeemer ->Bool
 isMoveAvailableInThisGame gip command  = case gip of
     GameInProgress{..} -> case command of
-            MakeMoveCommand{..} -> traceIfFalse "Illegal move: position is occupied." (isMoveAvailable mmcMove ( movesMadeToMoves (unwrapMovesMade gipMovesMade)))
-            _                   -> traceError "expected MakeMoveCommand"
-    _                  -> traceError "expected GameInProgress"
+            MakeMoveCommand{..} -> traceIfFalse "isMoveAvailableInThisGame: Illegal move: position is occupied." (isMoveAvailable mmcMove ( movesMadeToMoves (unwrapMovesMade gipMovesMade)))
+            _                   -> traceError "isMoveAvailableInThisGame: mexpected MakeMoveCommand"
+    _                  -> traceError "isMoveAvailableInThisGame: expected GameInProgress"
 
 
 {-# INLINABLE playerInCommandMustMatchNextPlayerInGameState #-}
 playerInCommandMustMatchNextPlayerInGameState :: GameStateDatum -> GameActionCommandRedeemer -> Bool
 playerInCommandMustMatchNextPlayerInGameState gs command = case gs of 
         GameInProgress {..}           -> case command of
-            MakeMoveCommand {..}          ->  traceIfFalse "Wrong player playing now!"
+            MakeMoveCommand {..}          ->  traceIfFalse "playerInCommandMustMatchNextPlayerInGameState: Wrong player playing now!"
                 $ gipPlayerAddressToMakeMove == mmcPlayerPubKeyHash 
-            _                   -> traceError "expected MakeMoveCommand"
-        _                   -> traceError "expected GameInProgress"
+            _                   -> traceError "playerInCommandMustMatchNextPlayerInGameState: expected MakeMoveCommand"
+        _                   -> traceError "playerInCommandMustMatchNextPlayerInGameState: expected GameInProgress"
 
 -- getWinner :: Moves -> BuiltinByteString
 
@@ -328,8 +328,8 @@ makeMove gip command =   case gip of
                                 else 
                                     GameInProgress {gipMovesMade = MovesMade movesMade, ..}
                                 )
-        _                   -> traceError "expected MakeMoveCommand"
-    _                   -> traceError "expected GameInProgress"
+        _                   -> traceError "makeMove: expected MakeMoveCommand"
+    _                   -> traceError "makeMove: expected GameInProgress"
 
             
 
@@ -343,7 +343,7 @@ makeMove gip command =   case gip of
 mkValidator :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool   -- the value of this function is on its sideeffects
 -- | gamestate == invalid and pkh == rootPkh = True
 -- gamestate is derived from datum on utxo and provided datums and redeemer.
-mkValidator gameState actionCommand ctx =  traceIfFalse "Invalid Command for GameState" $ validCommandForGameState gameState actionCommand ctx
+mkValidator gameState actionCommand ctx =  traceIfFalse "mkValidator: Invalid Command for GameState" $ validCommandForGameState gameState actionCommand ctx
     where 
         info :: PlutusV2.TxInfo
         info = PlutusV2.scriptContextTxInfo ctx
@@ -364,7 +364,7 @@ validCommandForGameState gs command ctx =  case gs of
         validGameInitiatedCommand gs command ctx = case command of
                                         JoinGameCommand {}          -> canJoinGame gs command ctx
                                         CancelInitiatedGameCommand  -> canCancelInitiatedGame gs command ctx
-                                        _                           -> traceError "Invalid command for gamestate GameInitiated"
+                                        _                           -> traceError "validCommandForGameState: Invalid command for gamestate GameInitiated"
                                 
 
         validGameInProgress :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
@@ -372,19 +372,19 @@ validCommandForGameState gs command ctx =  case gs of
         validGameInProgress gs command ctx = case command of
                                         MakeMoveCommand {}          -> canMakeMove gs command ctx
                                         CancelInProgressGameCommand -> canCancelInProgressGame gs command ctx
-                                        _                           -> traceError "Invalid command for gamestate GameInProgress"
+                                        _                           -> traceError "validCommandForGameState: Invalid command for gamestate GameInProgress"
 
 
         validGameIsWonCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
         validGameIsWonCommand gs command ctx = case command of
                                         ClaimWinCommand             -> canClaimWin gs command ctx
-                                        _                           -> traceError "Invalid command for gamestate GameIsWon"
+                                        _                           -> traceError "validCommandForGameState: Invalid command for gamestate GameIsWon"
 
 
         validGameIsTiedCommand :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
         validGameIsTiedCommand gs command ctx = case command of
                                         ClaimTieCommand             -> canClaimTie gs command ctx
-                                        _                           -> traceError "Invalid command for gamestate GameIsTied"
+                                        _                           -> traceError "validCommandForGameState: Invalid command for gamestate GameIsTied"
 
 {- LETS GET TO BUSINESS -}
 
@@ -410,11 +410,11 @@ validCommandForGameState gs command ctx =  case gs of
 canJoinGame :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
 -- canJoinGame _ _ _ = True
 canJoinGame gs command ctx =  case gs of 
-    GameInitiated {..} -> gameBetMustMatchTheValue && outputValueOnScriptMustBeDoubleTheBet && validScriptOutputAfterJoin
+    GameInitiated {..} -> gameBetMustMatchTheValue && outputValueOnScriptMustBeDoubleTheBet && validScriptDatumOutputAfterJoin
         where 
             -- the player initiating the game needs to match the value with the bet
             gameBetMustMatchTheValue :: Bool
-            gameBetMustMatchTheValue =  traceIfFalse "Invalid initiated game. Value does not match bet" 
+            gameBetMustMatchTheValue =  traceIfFalse "canJoinGame: Invalid initiated game. Value does not match bet" 
                                         $ (Ada.lovelaceValueOf (giBetInAda*1000000)) == getInputScriptValue ctx
 
             outputValueOnScriptMustBeDoubleTheBet :: Bool
@@ -422,22 +422,21 @@ canJoinGame gs command ctx =  case gs of
             -- getContinuingOutputs and ensure the value has doubled
             -- take script value or value in bet ?
             outputValueOnScriptMustBeDoubleTheBet = let expectedAdaValue = Ada.fromValue $ Ada.lovelaceValueOf (2 * giBetInAda * 1000000)
-                                                        in traceIfFalse "Bet is not matched, player cannot join!"  
+                                                        in traceIfFalse "canJoinGame: Bet is not matched, player cannot join!"  
                                                         $ expectedAdaValue == Ada.fromValue ( getOutputScriptValue ctx)
 
-            validScriptOutputAfterJoin :: Bool
-            validScriptOutputAfterJoin = case command of
+            validScriptDatumOutputAfterJoin :: Bool
+            validScriptDatumOutputAfterJoin = case command of
                 JoinGameCommand{..} -> 
                     let futureGameState = getOutputScriptDatum ctx                    
                         player2pkhFromCommand = jgcPlayerTwoPubKeyHash
-                        in case futureGameState of
-                            GameInitiated {}    -> traceError "validScriptOutputAfterJoin : GameInitiated FOUND!!"                            
-                            GameInProgress {..} -> traceIfFalse "PlayerTwoPubKeyHash not set correctly!" $ gipPlayerTwoPubKeyHash == player2pkhFromCommand
-                            _                   -> traceError "validScriptOutputAfterJoin : dont know how we got here.."   
+                        in case futureGameState of                            
+                            GameInProgress {..} -> traceIfFalse "canJoinGame: PlayerTwoPubKeyHash not set correctly!" $ gipPlayerTwoPubKeyHash == player2pkhFromCommand
+                            _                   -> traceError "canJoinGame: validScriptDatumOutputAfterJoin : dont know how we got here.."   
 
                                         
-                _                  -> traceError "expected JoinGameCommand" 
-    _                  -> traceError "expected GameInitiated" 
+                _                  -> traceError "canJoinGame: expected JoinGameCommand" 
+    _                  -> traceError "canJoinGame: expected GameInitiated" 
 
 
 
@@ -448,19 +447,20 @@ getOutputScriptTxOut ctx = scriptTxOut
             scriptTxouts = PlutusV2.getContinuingOutputs ctx
             scriptTxOut = case scriptTxouts of
                             [i] -> i
-                            _   -> traceError "expected exactly one script output"   
+                            _   -> traceError "getOutputScriptTxOut: Expected exactly one script output"   
 
 
 {-# INLINABLE getOutputScriptDatum #-}
 getOutputScriptDatum :: PlutusV2.ScriptContext -> GameStateDatum
 getOutputScriptDatum ctx = case (PlutusV2.txOutDatum (getOutputScriptTxOut ctx)) of
-                PlutusV2.NoOutputDatum          -> traceError "expected inlineDatum not NoOutputDatum!"   
-                PlutusV2.OutputDatumHash _      -> traceError "expected inlineDatum not OutputDatumHash!"   
+                PlutusV2.NoOutputDatum          -> traceError "getOutputScriptDatum: Expected inlineDatum not NoOutputDatum!"   
+                PlutusV2.OutputDatumHash _      -> traceError "getOutputScriptDatum: Expected inlineDatum not OutputDatumHash!"   
                 -- this is where the gamestate is hydrated from BuiltinData	
-                PlutusV2.OutputDatum  datum     ->  case (traceIfNothing "Expected custom data here !!". PlutusV2.fromBuiltinData . PlutusV2.fromBuiltin . PlutusV2.getDatum $ datum) of
-                                                        GameInitiated {..} -> GameInitiated {..}
+                PlutusV2.OutputDatum  datum     ->  case (traceIfNothing "getOutputScriptDatum: Expected custom data here !!". PlutusV2.fromBuiltinData . PlutusV2.fromBuiltin . PlutusV2.getDatum $ datum) of                
                                                         GameInProgress {..} -> GameInProgress {..}
-                                                        _               -> traceError "unexpected type of datum!!"   
+                                                        GameIsWon {..}      -> GameIsWon {..}
+                                                        GameIsTied {..}     -> GameIsTied {..}
+                                                        _                   -> traceError "getOutputScriptDatum: unexpected type of datum for the future state!!"   
                                                     where
                                                         -- @see https://github.com/input-output-hk/plutus-use-cases/blob/189dc6b468557b2946c835330dfb183d62180ace/mlabs/src/Mlabs/EfficientNFT/Lock.hs
                                                         traceIfNothing :: BuiltinString -> Maybe a -> a
@@ -492,7 +492,7 @@ getInputScriptValue ctx = PlutusV2.txOutValue . PlutusV2.txInInfoResolved $ scri
                                             in
                                                 case xs of
                                                     [i] -> i
-                                                    _   -> traceError "expected exactly one input with datum"   
+                                                    _   -> traceError "getTxInInfoWithDatum: Expected exactly one input with datum"   
 
             -- filter function
             getSriptInputTxInInfoFromTxInfo :: PlutusV2.TxInfo -> PlutusV2.TxInInfo
@@ -527,7 +527,7 @@ playerOneBetIsRefunded gs ctx = let winnerPubKeyHash = getWinnerPubKeyHashByTime
                                         -- Very NAIVE!!
                                         -- the value paid to winner may be more that the bet as it may include the change  
                                         -- bypassed for now with True ||
-                                        traceIfFalse "Winner is not getting paid!" 
+                                        traceIfFalse "playerOneBetIsRefunded: Winner is not getting paid!" 
                                         $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
 
 
@@ -537,10 +537,39 @@ playerOneBetIsRefunded gs ctx = let winnerPubKeyHash = getWinnerPubKeyHashByTime
 -- output is still in progress, or won , or tied
 {-# INLINABLE canMakeMove #-}
 canMakeMove :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
-canMakeMove gs command _ = 
+canMakeMove gs command ctx = 
     (isMoveAvailableInThisGame gs command) &&
     (playerInCommandMustMatchNextPlayerInGameState gs command) && 
+    (validScriptDatumOutputAfterMoveMade gs command ctx) &&
     True -- && True is placholder for more checks
+
+
+-- Again very Naive approach and only check output types not content of output data
+-- enough to illustrate understanding
+{-# INLINABLE  validScriptDatumOutputAfterMoveMade #-}
+validScriptDatumOutputAfterMoveMade :: GameStateDatum -> GameActionCommandRedeemer -> PlutusV2.ScriptContext -> Bool
+validScriptDatumOutputAfterMoveMade gs command ctx = case gs of
+    GameInProgress{..} -> case command of
+        MakeMoveCommand{..} -> let  futureGameState = makeMove gs command
+                                    outputGameState = getOutputScriptDatum ctx
+                                in
+                                    case futureGameState of
+                                        GameInProgress {} -> traceIfFalse "validScriptDatumOutputAfterMoveMade: Invalid future game state, expected GameInProgress" 
+                                            $ case outputGameState of
+                                                GameInProgress {}   -> True
+                                                _                   -> False
+                                        GameIsWon {}      -> traceIfFalse "validScriptDatumOutputAfterMoveMade: Invalid future game state, expected GameIsWon" 
+                                            $ case outputGameState of
+                                                GameIsWon {}   -> True
+                                                _                   -> False
+                                        GameIsTied {}      -> traceIfFalse "validScriptDatumOutputAfterMoveMade: Invalid future game state, expected GameIsTied" 
+                                            $ case outputGameState of
+                                                GameIsTied {}   -> True
+                                                _                   -> False
+                                        _                   -> traceError "validScriptDatumOutputAfterMoveMade: Expect future gamestate"   
+        _                  -> traceError "validScriptDatumOutputAfterMoveMade: Expect command to be MakeMoveCommand!"   
+    _                  -> traceError "validScriptDatumOutputAfterMoveMade: Expect GameState to be GameInProgress!"   
+
 
 
 -- txInfoValidRange :: POSIXTimeRange > ((giOccurredAtPosixTime GameStateDatum) + (giGameMaxIntervalInSeconds *1000))
@@ -568,7 +597,7 @@ getWinnerPubKeyHashByTimeout gs = case gs of
             GameInProgress{..}  ->  if gipPlayerOnePubKeyHash == gipPlayerAddressToMakeMove 
                                     then PubKeyHash gipPlayerTwoPubKeyHash 
                                     else PubKeyHash gipPlayerOnePubKeyHash
-            _                   -> traceError "Expected game state if either GameInitiated or GameInProgress !"
+            _                   -> traceError "getWinnerPubKeyHashByTimeout: Expected game state if either GameInitiated or GameInProgress !"
 
 
 
@@ -581,7 +610,7 @@ winnerByTimeoutIsPaid gs ctx = let  winnerPubKeyHash = getWinnerPubKeyHashByTime
                                         -- Very NAIVE!!
                                         -- the value paid to winner may be more that the bet as it may include the change  
                                         -- bypassed for now with True ||
-                                        traceIfFalse "Winner is not getting paid!" 
+                                        traceIfFalse "winnerByTimeoutIsPaid: Winner is not getting paid!" 
                                         $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
 
 
@@ -592,11 +621,11 @@ winnerByTimeoutIsPaid gs ctx = let  winnerPubKeyHash = getWinnerPubKeyHashByTime
 enoughTimeHasPassed :: GameStateDatum -> PlutusV2.POSIXTimeRange-> Bool
 -- Disable this check for now with True ||
 enoughTimeHasPassed gs txTimeRange = True || case gs of
-        GameInitiated {..}  -> traceIfFalse "Not enough time has passed to cancel an initiated game."  
+        GameInitiated {..}  -> traceIfFalse "enoughTimeHasPassed: Not enough time has passed to cancel an initiated game."  
             ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ giOccurredAtPosixTime + (giGameMaxIntervalInSeconds * 1000))) txTimeRange)
-        GameInProgress {..}  -> traceIfFalse "Not enough time has passed to cancel an inprogress game."  
+        GameInProgress {..}  -> traceIfFalse "enoughTimeHasPassed: Not enough time has passed to cancel an inprogress game."  
             ( contains (PlutusV2.from ( PlutusV2.POSIXTime $ gipOccurredAtPosixTime + (gipGameMaxIntervalInSeconds * 1000))) txTimeRange)
-        _                   -> traceError "expected GameInitiated or GameInProgress"
+        _                   -> traceError "enoughTimeHasPassed: expected GameInitiated or GameInProgress"
 
 
 -- validate output
@@ -615,10 +644,10 @@ canClaimWin gs command ctx = case gs of
                                         -- Very NAIVE!!
                                         -- the value paid to winner may be more that the bet as it may include the change  
                                         -- bypassed for now with True ||
-                                        traceIfFalse "Winner is not getting paid!" 
+                                        traceIfFalse "canClaimWin: Winner is not getting paid!" 
                                         $ Ada.fromValue winningValueInAda <= Ada.fromValue valuePayToWinner
                                                           
-    _                       -> traceError "expected game state GameIsWon" 
+    _                       -> traceError "canClaimWin: expected game state GameIsWon" 
 
         
 
@@ -642,9 +671,9 @@ canClaimTie gs command ctx = case gs of
                             -- Very NAIVE!!
                             -- the value paid to each player may be more that the bet as it may include the change 
                             -- pay atleast the value of the initial bet  
-                            traceIfFalse "Bets are not being refunded!"  
-                            $ traceIfFalse "valuePayToPlayer1, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer1) &&
-                            traceIfFalse "valuePayToPlayer2, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer2) 
+                            traceIfFalse "canClaimTie: Bets are not being refunded!"  
+                            $ traceIfFalse "canClaimTie: valuePayToPlayer1, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer1) &&
+                            traceIfFalse "canClaimTie: valuePayToPlayer2, bet is not being refunded!" (payoutValueInAda <= valueInAdaPaidToPlayer2) 
                                                           
     _               -> traceError "expected game state GameIsTied" 
 

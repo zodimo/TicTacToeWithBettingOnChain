@@ -73,16 +73,15 @@ The transaction construction will happen with cardanocli-js as individual steps 
   - [x] output gamestate is valid
     - [x] playerTwoPubKeyHash value is added from command ( I know all the datum props need to be tested)
 
-- [ ] can make move
+- [x] can make move
 
   - [x] current gamestate with valid params (enforced by types)
   - [x] the move in the command matches the next player to make move.
   - [x] ensure game is playable [ not won or tied , ensured by types]
   - [x] ensure designated space is not occupied
-  - [ ] check output game state valid after making move
+  - [x] check output game state valid after making move
 
-    - [ ] isGameWon
-    - [ ] isGameTied
+    - [x] is GameWon, is GameTied or still progress
 
 - [x] can claim win
 
