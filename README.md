@@ -82,7 +82,8 @@ CARDANO_CLI_DEBUG=true
 - you can at any time print the player 1 and player 2 wallets by running `node ./dist/scripts/print-player-wallets.js`
 - vitis the cardano [faucet](https://docs.cardano.org/cardano-testnet/tools/faucet/) and to fund player1 wallet
 - you can then run `node ./dist/scripts/fund-player2-wallet.js` to fund player2wallet with 1000Ada
-- you are now ready to run the example scripts.
+- you are now ready to run the example scripts. 
+- PS:  Make sure your node is running!
 - run `node dist/game-play/onchain-real/game1-win.js` for and staged game where there is a winner
 - run `node dist/game-play/onchain-real/game2-tie.js` for and staged game where it ends in a tie
 - run `node dist/game-play/onchain-real/game3-cancel-initiated-game.js` to initiate and cancel a game.
