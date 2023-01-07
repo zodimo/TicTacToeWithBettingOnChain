@@ -13,6 +13,7 @@ The game is started by player1 betting 5Ada with 1second timout.
 //   scriptAddress: string
 // ) => UtxoId
 const tx1UtxoId = sendStartGameCommandToScriptTransaction(player1Wallet, 5, 1, scriptAddress);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX2
@@ -28,6 +29,7 @@ Player 2 join the game and the transaction matches the bet found in the inline d
 //   scriptUtxoIdWithGameState: UtxoId
 // ) => UtxoId
 const tx2UtxoId = sendJoinGameCommandToScriptTransaction(player2Wallet, scriptAddress, scriptFile, tx1UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX3
@@ -53,6 +55,7 @@ const tx3UtxoId = sendCancelInProgressGameCommandToScriptTransaction(
   tx2UtxoId,
   [player1Wallet, player2Wallet]
 );
+// the script will wait for the utxoid to appear on the recipient address;
 console.log("##########################");
 console.log(`The last utxo of the cancelled game : ${tx3UtxoId}`);
 

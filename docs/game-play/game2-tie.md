@@ -13,6 +13,7 @@ The game is started by player1 betting 5Ada with 1second timout.
 //   scriptAddress: string
 // ) => UtxoId
 const tx1UtxoId = sendStartGameCommandToScriptTransaction(player1Wallet, 5, 1, scriptAddress);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX2
@@ -28,6 +29,7 @@ Player 2 join the game and the transaction matches the bet found in the inline d
 //   scriptUtxoIdWithGameState: UtxoId
 // ) => UtxoId
 const tx2UtxoId = sendJoinGameCommandToScriptTransaction(player2Wallet, scriptAddress, scriptFile, tx1UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX3
@@ -51,6 +53,7 @@ Player 2  plays A 1
 // ) => UtxoId
 const tx3Move = new Move(Row.ROW_A, Column.Col_1);
 const tx3UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx3Move, scriptAddress, scriptFile, tx2UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX4
@@ -64,6 +67,7 @@ Player 1  plays B 2
 
 const tx4Move = new Move(Row.ROW_B, Column.Col_2);
 const tx4UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx4Move, scriptAddress, scriptFile, tx3UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX5
@@ -77,6 +81,7 @@ Player 2  plays A 2
 
 const tx5Move = new Move(Row.ROW_A, Column.Col_2);
 const tx5UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx5Move, scriptAddress, scriptFile, tx4UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX6
@@ -90,6 +95,7 @@ Player 1  plays B 3
 
 const tx6Move = new Move(Row.ROW_B, Column.Col_3);
 const tx6UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx6Move, scriptAddress, scriptFile, tx5UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX7
@@ -103,6 +109,7 @@ Player 2  plays B 1
 
 const tx7Move = new Move(Row.ROW_A, Column.Col_3);
 const tx7UtxoId = sendMakeMoveCommandToScriptTransaction(player2Wallet, tx7Move, scriptAddress, scriptFile, tx6UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 
 ## TX8
@@ -116,6 +123,7 @@ Player 1  plays A 3 for the TIE
 
 const tx8Move = new Move(Row.ROW_A, Column.Col_3);
 const tx8UtxoId = sendMakeMoveCommandToScriptTransaction(player1Wallet, tx8Move, scriptAddress, scriptFile, tx7UtxoId);
+// the script will wait for the utxoid to appear on the recipient address;
 
 ```
 
@@ -137,6 +145,7 @@ const tx9UtxoIds = sendClaimTieCommandToScriptTransaction(player2Wallet, scriptA
   player1Wallet,
   player2Wallet,
 ]);
+// the script will wait for the utxoid to appear on the recipient address;
 console.log("##########################");
 console.log(`The last utxos of the tied game : ${tx9UtxoIds.map((utxo) => utxo.toString()).join(" ")}`);
 

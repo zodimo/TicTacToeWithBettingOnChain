@@ -12,6 +12,7 @@ The game is started by player1 betting 5Ada with 1second timout.
 //   scriptAddress: string
 // ) => UtxoId
 const tx1UtxoId = sendStartGameCommandToScriptTransaction(player1Wallet, 5, 1, scriptAddress);
+// the script will wait for the utxoid to appear on the recipient address;
 ```
 ## TX2
 Nobody joins the game and the initiated game can be cancelled after the timeout (gameMaxIntervalInSeconds) set on when initiated.
@@ -35,7 +36,7 @@ const tx2UtxoId = sendCancelInitiatedGameCommandToScriptTransaction(
   tx1UtxoId,
   [player1Wallet, player2Wallet]
 );
-
+// the script will wait for the utxoid to appear on the recipient address;
 console.log("##########################");
 console.log(`The last utxos of the cancelled game : ${tx2UtxoId}`);
 
