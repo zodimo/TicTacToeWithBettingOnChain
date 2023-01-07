@@ -1,5 +1,4 @@
 import { cardanoCli } from "../previewCardanoCliJs.js";
-import { createWallet } from "./create-wallet.js";
 import { TransactionBuildRawOptions } from "../cardano-cli/transaction/buid-raw-options.js";
 import { TransactionCalculateMinFeeOptions } from "../cardano-cli/transaction/calculate-min-fee-options.js";
 import { TransactionSignOptions } from "../cardano-cli/transaction/sign-options.js";
@@ -24,8 +23,6 @@ try {
   process.exit(1);
 }
 
-// const player1=createWallet("player1");
-// const player2=createWallet("player2");
 
 // funded wallet
 const jaco = cardanoCli.wallet("jaco");
