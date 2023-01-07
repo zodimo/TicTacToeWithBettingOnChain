@@ -43,6 +43,7 @@ Bob can now claim the winnings.
 The transaction construction will happen with cardanocli-js as individual steps to create the transactions to play the game and simulate async interactions.
 
 ### How to build the plutus script.
+This project assumes that you have prior knowledge of cardano-cli and have a node running locally. It can only be used by cloning the repo.
 
 - putus-apps tag for nix shell: v1.0.0
 - inside the plutus apps nix-shell, navigate back to root of this project.
@@ -50,10 +51,31 @@ The transaction construction will happen with cardanocli-js as individual steps 
 - run `:l Deploy`
 - run `writeTicTacToeValidator` , this will write to testnet/ticTacToe.plutus
 
+### Cardano-cli
+This project is built on cardano-cli 1.35.4
+
 ### how to run the staged transactions
+first we need to do some setup work.
+- setup .env file with `scp .env.example .env` to use the defaults. Feel free to edit .env file to suite your setup.
+  - please note only the defautl values of the node setup is tested.
+```text
+# default CARDANO_CLI_BIN_PATH="cardano-cli"
+CARDANO_CLI_BIN_PATH="cardano-cli"
+# default WORKING_DIRECTORY = "./workdir"
+WORKING_DIRECTORY="/workdir"
+# magic number for preview network is 2, preprod 1, not used if NETWORK_IS_TESTNET = false 
+#default NETWORK_TESTNET_MAGIC_NUMBER=2
+NETWORK_TESTNET_MAGIC_NUMBER=2
+#true, false
+#default CARDANO_CLI_DEBUG=true 
+CARDANO_CLI_DEBUG=true 
+```
 - install `node v18`
 - run `npm install` in root of project
 - run `npx tsc` to compile all the typscript files
+- create player 1 and player 2 wallets by running `node ./dist/scripts/create-player-wallets.js`
+- you can at any time print the  player 1 and player 2 wallets by running `node ./dist/scripts/print-player-wallets.js`
+- vitis the cardano [faucet](https://docs.cardano.org/cardano-testnet/tools/faucet/) and to fund the plauer wallets 
 - you are now ready to run the example scripts.
 - run `node dist/game-play/onchain-real/game1-win.js` for and staged game where there is a winner 
 - run `node dist/game-play/onchain-real/game2-tie.js` for and staged game where it ends in a tie 
