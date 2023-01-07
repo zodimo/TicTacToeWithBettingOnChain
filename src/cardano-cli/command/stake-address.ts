@@ -22,7 +22,7 @@ export class StakeAddress extends Command {
     super();
   }
   getCommand(): string {
-    return `${this.commandPrefix} query`;
+    return `${this.commandPrefix} stake-address`;
   }
 
   keyGen(builder?: CommandBuilder<KeyGen>): KeyGen {
