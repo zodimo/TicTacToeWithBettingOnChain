@@ -1,3 +1,6 @@
+workdir/priv/**/*
+workdir/tmp/**/*
+
 # Haskell
 dist
 dist-*
