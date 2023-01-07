@@ -24,7 +24,7 @@ import { ProtocolParamsFile } from "./command/shared/protocol-params-file.js";
 import { SigningKeyFile } from "./command/transaction/sign/signing-key-file.js";
 import { TxIdTx } from "./command/transaction/tx-id.js";
 import { Address } from "./command/address.js";
-import { PaymentComponent } from "./command/address/build.js";
+import { PaymentComponent, StakeComponent as AddressBuildStakeComponent } from "./command/address/build.js";
 import { StakeAddress } from "./command/stake-address.js";
 import { StakeComponent } from "./command/stake-address/stake-component.js";
 import { OutputAs } from "./command/transaction/build/output-as.js";
@@ -113,7 +113,7 @@ export class CardanoCli {
   scriptWallet(account: string): ScriptWallet {
     const paymentAddrFile = this.createPaymentAddressFileNameForAccount(account);
     if (!fs.existsSync(paymentAddrFile)) {
-      throw new Error(`Payment Address for ${account} does not exist.`);
+      throw new Error(`Payment Address for ${account} does not exist, existed path: ${paymentAddrFile}`);
     }
     const paymentAddr = fs.readFileSync(paymentAddrFile).toString();
 
@@ -126,15 +126,15 @@ export class CardanoCli {
     const paymentAddrVerificationKeyFile = this.createPaymentVKeyFileNameForAccount(account);
 
     if (!fs.existsSync(paymentAddrFile)) {
-      throw new Error(`Payment Address for ${account} does not exist.`);
+      throw new Error(`Payment Address for ${account} does not exist, existed path: ${paymentAddrFile}`);
     }
 
     if (!fs.existsSync(paymentAddrVerificationKeyFile)) {
-      throw new Error(`Payment Verification Key for ${account} does not exist.`);
+      throw new Error(`Payment Verification Key for ${account} does not exist, existed path: ${paymentAddrVerificationKeyFile}`);
     }
 
     if (!fs.existsSync(paymentAddrSigningKeyFile)) {
-      throw new Error(`Payment Signing Key for ${account} does not exist.`);
+      throw new Error(`Payment Signing Key for ${account} does not exist, existed path: ${paymentAddrSigningKeyFile}`);
     }
 
     const paymentkeys = new AddressKeys(paymentAddrVerificationKeyFile, paymentAddrSigningKeyFile);
@@ -580,4 +580,18 @@ export class CardanoCli {
     //higher order function
     return this.queryTip().slot;
   }
+
+  createWallet = (account: string) => {
+    //higher order function
+    const paymentAddressKeys = this.paymentAddressKeyGen(account);
+    const stakeAddressKeys = this.stakeAddressKeyGen(account);
+    this.paymentAddressBuild(
+      account,
+      new PaymentAddressBuildOptions(
+        PaymentComponent.verificationKeyFile(paymentAddressKeys.verificationKeyFile),
+        AddressBuildStakeComponent.verificationKeyFile(stakeAddressKeys.verificationKeyFile)
+      )
+    );
+    return this.wallet(account);
+  };
 }
