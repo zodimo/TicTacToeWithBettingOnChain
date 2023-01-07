@@ -1,4 +1,4 @@
-# Documentation
+# Documentation [ Just a collection of thoughts ]
 
 How to align the offfline application with the online validator expectations.
 With the expectations of the online validator being met, the consumption of the utxos is impossible.
