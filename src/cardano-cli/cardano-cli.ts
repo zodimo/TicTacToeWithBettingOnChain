@@ -111,6 +111,7 @@ export class CardanoCli {
   }
 
   scriptWallet(account: string): ScriptWallet {
+    //higher order function
     const paymentAddrFile = this.createPaymentAddressFileNameForAccount(account);
     if (!fs.existsSync(paymentAddrFile)) {
       throw new Error(`Payment Address for ${account} does not exist, existed path: ${paymentAddrFile}`);
@@ -121,6 +122,7 @@ export class CardanoCli {
   }
 
   wallet(account: string): Wallet {
+    //higher order function
     const paymentAddrFile = this.createPaymentAddressFileNameForAccount(account);
     const paymentAddrSigningKeyFile = this.createPaymentSKeyFileNameForAccount(account);
     const paymentAddrVerificationKeyFile = this.createPaymentVKeyFileNameForAccount(account);
@@ -130,7 +132,9 @@ export class CardanoCli {
     }
 
     if (!fs.existsSync(paymentAddrVerificationKeyFile)) {
-      throw new Error(`Payment Verification Key for ${account} does not exist, existed path: ${paymentAddrVerificationKeyFile}`);
+      throw new Error(
+        `Payment Verification Key for ${account} does not exist, existed path: ${paymentAddrVerificationKeyFile}`
+      );
     }
 
     if (!fs.existsSync(paymentAddrSigningKeyFile)) {
@@ -152,11 +156,25 @@ export class CardanoCli {
   }
 
   getUtxoStackForAddress(paymentAddr: string): UtxoStack {
+    //higher order function
     const utxos = this.getUtxoListForAddress(paymentAddr);
+    return new UtxoStack(utxos);
+  }
+  getUtxoStackForScriptWallet(account: string): UtxoStack {
+    //higher order function
+    const wallet = this.scriptWallet(account);
+    const utxos = this.getUtxoListForAddress(wallet.paymentAddr);
+    return new UtxoStack(utxos);
+  }
+  getUtxoStackForWallet(account: string): UtxoStack {
+    //higher order function
+    const wallet = this.wallet(account);
+    const utxos = this.getUtxoListForAddress(wallet.paymentAddr);
     return new UtxoStack(utxos);
   }
 
   getUtxoListForAddress(address: string): Utxo[] {
+    //higher order function
     const UID = Math.random().toString(36).slice(2, 9);
     const utxosTempFile = this.createTempFilename(`utxo_${UID}.json`);
 
