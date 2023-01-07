@@ -89,6 +89,12 @@ CARDANO_CLI_DEBUG=true
 - run `node dist/game-play/onchain-real/game3-cancel-initiated-game.js` to initiate and cancel a game.
 - run `node dist/game-play/onchain-real/game4-cancel-inprogress-game.js` to initiate a game, join and then stop playing and cancel the game.
 
+## Staged games explanations
+  * [game1-win.js](./docs/game-play/game1-win.md)
+  * [game2-tie..js](./docs/game-play/game2-tie.md)
+  * [game3-cancel-initiated-game.js](./docs/game3-cancel-initiated-game.md)
+  * [game4-cancel-inprogress-game.js](./docs/game-play/game4-cancel-inprogress-game.md)
+
 ## Validator requirement implementation onchain
 
 (if not implemented && True is used )
